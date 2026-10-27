@@ -49,7 +49,7 @@ export async function hashPasscode(passcode: string, saltHex?: string): Promise<
   var derived = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: salt as unknown as BufferSource,
       iterations: 100000,
       hash: 'SHA-256',
     },
@@ -85,7 +85,7 @@ export async function deriveAesKey(password: string, salt: Uint8Array, iteration
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: salt as unknown as BufferSource,
       iterations: iterations,
       hash: 'SHA-256',
     },
@@ -113,10 +113,10 @@ export async function encryptAesGcm(plainText: string, password: string): Promis
   var cipherBuffer = await crypto.subtle.encrypt(
     {
       name: 'AES-GCM',
-      iv: iv,
+      iv: iv as unknown as BufferSource,
     },
     key,
-    encodedData
+    encodedData as unknown as BufferSource
   )
 
   return {
@@ -142,10 +142,10 @@ export async function decryptAesGcm(
   var decryptedBuffer = await crypto.subtle.decrypt(
     {
       name: 'AES-GCM',
-      iv: iv,
+      iv: iv as unknown as BufferSource,
     },
     key,
-    cipherBytes
+    cipherBytes as unknown as BufferSource
   )
 
   var decoder = new TextDecoder()

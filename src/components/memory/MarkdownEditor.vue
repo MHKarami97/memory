@@ -186,8 +186,10 @@ function insertMarkdown(prefix: string, suffix: string, defaultText: string) {
 
   // Reposition cursor
   setTimeout(() => {
-    el.focus()
-    el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
+    if (el) {
+      el.focus()
+      el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
+    }
   }, 10)
 }
 </script>

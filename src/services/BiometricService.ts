@@ -20,13 +20,13 @@ export class BiometricService {
     var userId = getRandomBytes(16)
 
     var createOptions: PublicKeyCredentialCreationOptions = {
-      challenge: challenge,
+      challenge: challenge as unknown as BufferSource,
       rp: {
         name: 'خاطره‌نامه',
         id: window.location.hostname,
       },
       user: {
-        id: userId,
+        id: userId as unknown as BufferSource,
         name: 'user@khatereh',
         displayName: 'کاربر خاطره‌نامه',
       },
@@ -60,7 +60,7 @@ export class BiometricService {
     try {
       var challenge = getRandomBytes(32)
       var getOptions: PublicKeyCredentialRequestOptions = {
-        challenge: challenge,
+        challenge: challenge as unknown as BufferSource,
         userVerification: 'required',
         timeout: 60000,
       }
@@ -73,7 +73,7 @@ export class BiometricService {
         }
         getOptions.allowCredentials = [
           {
-            id: bytes,
+            id: bytes as unknown as BufferSource,
             type: 'public-key',
             transports: ['internal'],
           },

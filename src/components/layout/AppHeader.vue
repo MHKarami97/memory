@@ -54,6 +54,7 @@ import { computed } from 'vue'
 import { BookHeart, Plus, Lock, Sun, Moon } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import type { ThemeMode } from '@/models/Settings'
 
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
@@ -63,7 +64,7 @@ const isDark = computed(() => {
 })
 
 function toggleTheme() {
-  var nextMode = isDark.value ? 'light' : 'dark'
+  var nextMode: ThemeMode = isDark.value ? 'light' : 'dark'
   settingsStore.updateSetting('themeMode', nextMode)
 }
 </script>
