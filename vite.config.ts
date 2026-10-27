@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'icons/*.png', 'fonts/**/*.woff2', 'fonts/*.css'],
+      includeAssets: ['icons/*.png', 'fonts/**/*.woff2', 'fonts/*.css'],
       manifest: {
         name: 'خاطره‌نامه | دفترچه خاطرات شخصی',
         short_name: 'خاطره‌نامه',
