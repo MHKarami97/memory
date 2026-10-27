@@ -2,26 +2,39 @@
 <html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="وضعیت لحظه‌ای و پیش‌بینی آب‌وهوای تمام ۳۱ استان ایران - بروزرسانی خودکار" />
-    <link rel="icon" type="image/png" href="%BASE_URL%icons/icon-48.png" />
-    <link href="%BASE_URL%fonts/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
-    <title>هواشناسی | آب‌وهوای استان‌های ایران</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="خاطره‌نامه - دفترچه خاطرات شخصی امن، آفلاین و محرمانه بدون بک‌اند" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="خاطره‌نامه" />
+    <link rel="icon" type="image/png" href="/icons/icon-48.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link href="/fonts/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <title>خاطره‌نامه | دفترچه خاطرات شخصی</title>
     <script>
       (function () {
         try {
-          var stored = localStorage.getItem('weather-theme');
-          var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-          document.documentElement.setAttribute('data-theme', stored || (prefersLight ? 'light' : 'dark'));
+          var mode = localStorage.getItem('khatereh-theme-mode') || 'system';
+          var theme = mode;
+          if (mode === 'system') {
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            theme = prefersDark ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
   </head>
-  <body>
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans transition-colors duration-200 select-none md:select-auto">
     <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,0 +1,379 @@
+<template>
+  <div class="max-w-4xl mx-auto p-4 sm:p-6 pb-28 md:pb-12 space-y-8">
+    <div>
+      <h2 class="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <Settings class="w-6 h-6 text-indigo-500" />
+        <span>تنظیمات و پیکربندی برنامه</span>
+      </h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        شخصی‌سازی ظاهر، کیفیت عکس‌ها، موتور هوش مصنوعی تبدیل صدا، امنیت و نسخه پشتیبان
+      </p>
+    </div>
+
+    <!-- 1. Appearance & Display -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-5 transition-colors">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <Palette class="w-4 h-4 text-indigo-500" />
+        <span>ظاهر و چیدمان</span>
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Theme Mode -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">تم رنگی برنامه:</label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <button
+              v-for="t in [
+                { id: 'light', label: 'روشن', icon: Sun },
+                { id: 'dark', label: 'تاریک', icon: Moon },
+                { id: 'system', label: 'سیستم', icon: Monitor },
+              ]"
+              :key="t.id"
+              type="button"
+              class="p-2.5 rounded-xl border flex flex-col items-center gap-1.5 font-medium transition-all"
+              :class="settingsStore.settings.themeMode === t.id ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm' : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'"
+              @click="settingsStore.updateSetting('themeMode', t.id as any)"
+            >
+              <component :is="t.icon" class="w-4 h-4" />
+              <span>{{ t.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Font Size -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">اندازه قلم (فونت):</label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <button
+              v-for="f in [
+                { id: 'sm', label: 'کوچک' },
+                { id: 'base', label: 'متوسط' },
+                { id: 'lg', label: 'بزرگ' },
+              ]"
+              :key="f.id"
+              type="button"
+              class="p-2.5 rounded-xl border font-medium transition-all"
+              :class="settingsStore.settings.fontSize === f.id ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm' : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'"
+              @click="settingsStore.updateSetting('fontSize', f.id as any)"
+            >
+              <span>{{ f.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Photo Compression Quality -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <ImageIcon class="w-4 h-4 text-emerald-500" />
+            <span>کیفیت فشرده‌سازی عکس‌ها</span>
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            همه تصاویر پیش از ذخیره‌سازی در دیتابیس دستگاه، بهینه‌سازی و فشرده می‌شوند تا حافظه پر نشود.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <label
+          v-for="q in [
+            { id: 'high', label: 'کیفیت بالا (ابعاد تا 1920px)', desc: 'بزرگنمایی بالا، حجم فایل کمی بیشتر' },
+            { id: 'medium', label: 'کیفیت متعادل (پیشنهادی)', desc: 'بهترین تعادل میان وضوح و مصرف حافظه' },
+            { id: 'low', label: 'فوق‌العاده سبک و کم‌حجم', desc: 'صرفه‌جویی حداکثری در حافظه گوشی' },
+          ]"
+          :key="q.id"
+          class="p-3.5 rounded-2xl border cursor-pointer space-y-1 transition-all"
+          :class="settingsStore.settings.photoQuality === q.id ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'"
+        >
+          <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+            <input
+              type="radio"
+              name="photoQuality"
+              :value="q.id"
+              :checked="settingsStore.settings.photoQuality === q.id"
+              class="text-emerald-600 focus:ring-emerald-500"
+              @change="settingsStore.updateSetting('photoQuality', q.id as any)"
+            />
+            <span>{{ q.label }}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-normal pr-5">{{ q.desc }}</p>
+        </label>
+      </div>
+    </div>
+
+    <!-- 3. Speech-to-Text & Local AI Models -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-5 transition-colors">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Mic class="w-4 h-4 text-rose-500" />
+          <span>موتور تبدیل ویس به متن (Speech-to-Text)</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          می‌توانید بین پردازش سیستمی مرورگر و اجرای کامل مدل‌های هوش مصنوعی روی دستگاه (بدون اینترنت) انتخاب کنید.
+        </p>
+      </div>
+
+      <!-- Engine Selector -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <label
+          class="p-3.5 rounded-2xl border cursor-pointer space-y-1 transition-all"
+          :class="settingsStore.settings.speechEngine === 'system' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'"
+        >
+          <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+            <input
+              type="radio"
+              name="speechEngine"
+              value="system"
+              :checked="settingsStore.settings.speechEngine === 'system'"
+              class="text-indigo-600"
+              @change="settingsStore.updateSetting('speechEngine', 'system')"
+            />
+            <span>موتور سیستمی مرورگر (Web Speech API)</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-normal pr-5">
+            سریع و بدون نیاز به دانلود فایل؛ اما ممکن است بسته به سیستم عامل صدا برای پردازش به سرور مرورگر ارسال شود.
+          </p>
+        </label>
+
+        <label
+          class="p-3.5 rounded-2xl border cursor-pointer space-y-1 transition-all"
+          :class="settingsStore.settings.speechEngine === 'local' ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'"
+        >
+          <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+            <input
+              type="radio"
+              name="speechEngine"
+              value="local"
+              :checked="settingsStore.settings.speechEngine === 'local'"
+              class="text-indigo-600"
+              @change="settingsStore.updateSetting('speechEngine', 'local')"
+            />
+            <span>مدل محلی ویسپر (۱۰۰٪ آفلاین و محرمانه)</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-normal pr-5">
+            مدل هوش مصنوعی یک‌بار دانلود شده و به شکل محلی داخل پردازنده دستگاه بدون اینترنت اجرا می‌شود.
+          </p>
+        </label>
+      </div>
+
+      <!-- Local Models List -->
+      <div v-if="settingsStore.settings.speechEngine === 'local'" class="space-y-3 pt-2">
+        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300">مدل‌های محلی قابل دانلود:</h4>
+        <div class="space-y-3">
+          <LocalModelCard
+            v-for="model in availableModels"
+            :key="model.id"
+            :model="model"
+            :is-default="settingsStore.settings.defaultLocalModelId === model.id"
+            @downloaded="refreshModels"
+            @set-default="setDefaultModel"
+            @delete="deleteModel"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Daily Reminder (Notification API) -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Bell class="w-4 h-4 text-amber-500" />
+            <span>یادآور روزانه ثبت خاطره</span>
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            ارسال اعلان در ساعت مشخص. اگر در آن روز قبلاً خاطره‌ای ثبت کرده باشید، اعلانی ارسال نخواهد شد.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all"
+          :class="settingsStore.settings.dailyReminderEnabled ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
+          @click="toggleDailyReminder"
+        >
+          {{ settingsStore.settings.dailyReminderEnabled ? 'فعال' : 'غیرفعال' }}
+        </button>
+      </div>
+
+      <div v-if="settingsStore.settings.dailyReminderEnabled" class="flex items-center gap-3 pt-2">
+        <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">ساعت ارسال اعلان:</span>
+        <input
+          v-model="reminderTime"
+          type="time"
+          class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+          @change="onReminderTimeChanged"
+        />
+      </div>
+    </div>
+
+    <!-- 5. Security & Biometrics -->
+    <SecuritySettings />
+
+    <!-- 6. Encrypted Backup & Restore -->
+    <BackupManager />
+
+    <!-- 7. Storage Breakdown -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <HardDrive class="w-4 h-4 text-indigo-500" />
+        <span>فضای اشغال‌شده توسط اپلیکیشن</span>
+      </h3>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span class="text-slate-400 block text-[11px]">متن خاطرات:</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ formatFileSize(storageBreakdown.memoriesTextBytes) }}</span>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span class="text-slate-400 block text-[11px]">عکس‌های فشرده:</span>
+          <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">{{ formatFileSize(storageBreakdown.photosBytes) }}</span>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span class="text-slate-400 block text-[11px]">فایل‌های صوتی:</span>
+          <span class="text-sm font-bold text-rose-500">{{ formatFileSize(storageBreakdown.voiceBytes) }}</span>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span class="text-slate-400 block text-[11px]">کل حجم دیتابیس:</span>
+          <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ formatFileSize(storageBreakdown.totalBytes) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. App Versions & Clear All Data -->
+    <div class="border border-rose-200 dark:border-rose-950/60 rounded-3xl p-5 bg-rose-50/20 dark:bg-rose-950/10 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-rose-700 dark:text-rose-400 flex items-center gap-2">
+            <Trash2 class="w-4 h-4" />
+            <span>پاکسازی کامل تمام اطلاعات</span>
+          </h3>
+          <p class="text-xs text-rose-600/80 dark:text-rose-400/80 mt-0.5">
+            با این کار تمام خاطرات، تصاویر، فایل‌ها و پیش‌نویس‌ها برای همیشه از این دستگاه پاک می‌شوند.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-semibold shadow-sm transition-all"
+          @click="confirmClearAll"
+        >
+          پاکسازی همه داده‌ها
+        </button>
+      </div>
+
+      <!-- Tech Stack Info -->
+      <div class="pt-4 border-t border-rose-200/40 dark:border-rose-900/40 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between flex-wrap gap-2">
+        <span>خاطره‌نامه نسخه ۱.۰.۰ • Vue 3 + TypeScript + Vite + Tailwind + Dexie</span>
+        <span class="text-emerald-500 font-semibold">۱۰۰٪ آفلاین و بدون سرور</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import {
+  Settings,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Image as ImageIcon,
+  Mic,
+  Bell,
+  HardDrive,
+  Trash2,
+} from 'lucide-vue-next'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useMemoryStore } from '@/stores/memoryStore'
+import { speechRecognitionService } from '@/services/SpeechRecognitionService'
+import { notificationService } from '@/services/NotificationService'
+import { storageService, type StorageBreakdown } from '@/services/StorageService'
+import { formatFileSize } from '@/utils/format'
+import { useToast } from '@/composables/useToast'
+import type { LocalSpeechModel } from '@/models/SpeechModel'
+import LocalModelCard from '@/components/settings/LocalModelCard.vue'
+import SecuritySettings from '@/components/settings/SecuritySettings.vue'
+import BackupManager from '@/components/settings/BackupManager.vue'
+
+const settingsStore = useSettingsStore()
+const memoryStore = useMemoryStore()
+const { showToast } = useToast()
+
+const availableModels = ref<LocalSpeechModel[]>([])
+const reminderTime = ref(settingsStore.settings.dailyReminderTime || '21:00')
+const storageBreakdown = ref<StorageBreakdown>({
+  totalBytes: 0,
+  memoriesTextBytes: 0,
+  photosBytes: 0,
+  voiceBytes: 0,
+  attachmentsBytes: 0,
+})
+
+onMounted(async () => {
+  await refreshModels()
+  await refreshStorage()
+})
+
+async function refreshModels() {
+  availableModels.value = await speechRecognitionService.getAvailableModels()
+}
+
+async function refreshStorage() {
+  storageBreakdown.value = await storageService.getStorageUsage()
+}
+
+async function setDefaultModel(modelId: string) {
+  await settingsStore.updateSetting('defaultLocalModelId', modelId)
+  showToast({ type: 'success', message: 'مدل محلی پیش‌فرض تغییر یافت.' })
+}
+
+async function deleteModel(modelId: string) {
+  if (confirm('آیا از حذف این مدل محلی و آزادسازی فضای ذخیره‌سازی مطمئن هستید؟')) {
+    await speechRecognitionService.deleteModel(modelId)
+    await refreshModels()
+    showToast({ type: 'info', message: 'مدل محلی حذف شد.' })
+  }
+}
+
+async function toggleDailyReminder() {
+  var current = settingsStore.settings.dailyReminderEnabled
+  if (!current) {
+    var granted = await notificationService.requestPermission()
+    if (!granted) {
+      alert('اجازه نمایش اعلان توسط مرورگر داده نشد. لطفاً در تنظیمات مرورگر اعلان‌ها را فعال کنید.')
+      return
+    }
+  }
+  await settingsStore.updateSetting('dailyReminderEnabled', !current)
+  showToast({
+    type: 'success',
+    message: !current ? 'یادآور روزانه با موفقیت فعال شد.' : 'یادآور غیرفعال شد.',
+  })
+}
+
+function onReminderTimeChanged() {
+  settingsStore.updateSetting('dailyReminderTime', reminderTime.value)
+  showToast({ type: 'success', message: 'ساعت یادآور به‌روزرسانی شد.' })
+}
+
+async function confirmClearAll() {
+  var step1 = confirm('هشدار جدی: آیا کاملاً مطمئن هستید که می‌خواهید تمام خاطرات و فایل‌ها را به طور کامل پاک کنید؟')
+  if (step1) {
+    var step2 = confirm('این عملیات غیرقابل بازگشت است. آیا ادامه می‌دهید؟')
+    if (step2) {
+      await storageService.clearAllStorage()
+      await memoryStore.loadMemories()
+      await refreshStorage()
+      showToast({ type: 'info', message: 'تمام داده‌های برنامه با موفقیت پاکسازی شدند.' })
+    }
+  }
+}
+</script>
