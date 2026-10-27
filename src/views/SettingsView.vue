@@ -106,14 +106,136 @@
 
     <!-- 3. Smart Writing & Spell-Check -->
     <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
-      <div>
-        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Wand2 class="w-4 h-4 text-indigo-500" />
-          <span>نگارش و ویرایش هوشمند متن (Spell-Check & Formatting)</span>
-        </h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          تنظیمات تصحیح خودکار غلط املایی فارسی و انگلیسی، استانداردسازی نیم‌فاصله‌ها و فرمت‌بندی هوشمند مارک‌داون
-        </p>
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Wand2 class="w-4 h-4 text-indigo-500" />
+            <span>نگارش و ویرایش هوشمند متن (Spell-Check & Formatting)</span>
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            تنظیمات تصحیح خودکار غلط املایی فارسی و انگلیسی، استانداردسازی نیم‌فاصله‌ها و فرمت‌بندی هوشمند مارک‌داون
+          </p>
+        </div>
+
+        <!-- Help Guide Toggle Button -->
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-all shadow-sm active:scale-95"
+          @click="showEnhancementGuide = !showEnhancementGuide"
+        >
+          <HelpCircle class="w-3.5 h-3.5 text-indigo-500" />
+          <span>راهنما و مثال‌های کاربردی</span>
+          <ChevronUp v-if="showEnhancementGuide" class="w-3.5 h-3.5" />
+          <ChevronDown v-else class="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <!-- Collapsible Guide Panel -->
+      <div
+        v-if="showEnhancementGuide"
+        class="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/60 space-y-4 animate-in fade-in duration-200"
+      >
+        <div class="flex items-center gap-2 text-xs font-bold text-indigo-900 dark:text-indigo-200">
+          <Sparkles class="w-4 h-4 text-amber-500 shrink-0" />
+          <span>راهنمای استفاده و جدول تبدیل‌های هوشمند: چه بنویسید تا خودکار فرمت شود؟</span>
+        </div>
+
+        <!-- Guide Section A: Smart Markdown Formatting -->
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            <span>۱. فرمت‌بندی خودکار لیست‌ها، بولد و نشانه‌ها:</span>
+          </h5>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+            <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span class="text-slate-400 block font-medium">اگر این‌طور بنویسید (ورودی):</span>
+              <p class="font-mono text-rose-600 dark:text-rose-400">۱- ورزش صبحگاهی<br>1) مطالعه کتاب<br>• تماس با دوستان</p>
+              <span class="text-slate-400 block font-medium pt-1">تبدیل می‌شود به (خروجی استاندارد):</span>
+              <p class="font-mono text-emerald-600 dark:text-emerald-400">1. ورزش صبحگاهی<br>1. مطالعه کتاب<br>- تماس با دوستان</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span class="text-slate-400 block font-medium">اگر کلمات کلیدی بنویسید (ورودی):</span>
+              <p class="font-mono text-rose-600 dark:text-rose-400">نکته مهم: فردا زودتر بیدار شوم<br>یادآوری: داروها را بخرم<br>هشدار: درایو پر شده</p>
+              <span class="text-slate-400 block font-medium pt-1">تبدیل می‌شود به (برجسته‌سازی خودکار):</span>
+              <p class="font-mono text-emerald-600 dark:text-emerald-400">**نکته مهم:** فردا زودتر بیدار شوم<br>**یادآوری:** داروها را بخرم<br>**هشدار:** درایو پر شده</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guide Section B: Persian & English Spell Check & Half-Space -->
+        <div class="space-y-2">
+          <h5 class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+            <span>۲. تصحیح خودکار غلط املایی و نیم‌فاصله‌های هوشمند:</span>
+          </h5>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
+            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span class="font-bold text-indigo-600 dark:text-indigo-400 block">نیم‌فاصله‌گذاری (ZWNJ):</span>
+              <ul class="space-y-1 text-slate-600 dark:text-slate-300">
+                <li>می روم ➔ <strong class="text-slate-900 dark:text-slate-100">می‌روم</strong></li>
+                <li>کتاب ها ➔ <strong class="text-slate-900 dark:text-slate-100">کتاب‌ها</strong></li>
+                <li>عکس هایم ➔ <strong class="text-slate-900 dark:text-slate-100">عکس‌هایم</strong></li>
+                <li>به عنوان ➔ <strong class="text-slate-900 dark:text-slate-100">به‌عنوان</strong></li>
+                <li>فوق العاده ➔ <strong class="text-slate-900 dark:text-slate-100">فوق‌العاده</strong></li>
+              </ul>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span class="font-bold text-indigo-600 dark:text-indigo-400 block">غلط‌های املایی فارسی:</span>
+              <ul class="space-y-1 text-slate-600 dark:text-slate-300">
+                <li>اصلا / اصلن ➔ <strong class="text-slate-900 dark:text-slate-100">اصلاً</strong></li>
+                <li>خاهش / خاستم ➔ <strong class="text-slate-900 dark:text-slate-100">خواهش / خواستم</strong></li>
+                <li>راجب / راجعبه ➔ <strong class="text-slate-900 dark:text-slate-100">راجع‌به</strong></li>
+                <li>سپاسگذار ➔ <strong class="text-slate-900 dark:text-slate-100">سپاسگزار</strong></li>
+                <li>مساله ➔ <strong class="text-slate-900 dark:text-slate-100">مسئله</strong></li>
+              </ul>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+              <span class="font-bold text-indigo-600 dark:text-indigo-400 block">انگلیسی و نگارشی:</span>
+              <ul class="space-y-1 text-slate-600 dark:text-slate-300">
+                <li>teh ➔ <strong class="text-slate-900 dark:text-slate-100">the</strong></li>
+                <li>recieve ➔ <strong class="text-slate-900 dark:text-slate-100">receive</strong></li>
+                <li>seperate ➔ <strong class="text-slate-900 dark:text-slate-100">separate</strong></li>
+                <li>کجا رفتی ? ➔ <strong class="text-slate-900 dark:text-slate-100">کجا رفتی؟</strong></li>
+                <li>سلام ! ➔ <strong class="text-slate-900 dark:text-slate-100">سلام!</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Playground / Test Box -->
+        <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/70 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <ArrowLeftRight class="w-3.5 h-3.5 text-indigo-500" />
+              <span>کادر آزمایش زنده (Playground):</span>
+            </span>
+
+            <button
+              type="button"
+              class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm active:scale-95"
+              @click="runPlaygroundTest"
+            >
+              امتحان کن و تصحیح کن
+            </button>
+          </div>
+
+          <textarea
+            v-model="playgroundInput"
+            rows="2"
+            class="w-full text-xs p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 outline-none resize-none leading-relaxed"
+            placeholder="یک متن با غلط املایی یا فرمت دلخواه بنویسید تا اصلاح شود..."
+          ></textarea>
+
+          <div v-if="playgroundResult" class="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs">
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block mb-1">نتیجه پس از ویرایش خودکار:</span>
+            <p class="text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">{{ playgroundResult }}</p>
+          </div>
+        </div>
       </div>
 
       <div class="space-y-3 pt-1">
@@ -356,12 +478,18 @@ import {
   HardDrive,
   Trash2,
   Wand2,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  ArrowLeftRight,
 } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useMemoryStore } from '@/stores/memoryStore'
 import { speechRecognitionService } from '@/services/SpeechRecognitionService'
 import { notificationService } from '@/services/NotificationService'
 import { storageService, type StorageBreakdown } from '@/services/StorageService'
+import { textEnhancementService } from '@/services/TextEnhancementService'
 import { formatFileSize } from '@/utils/format'
 import { useToast } from '@/composables/useToast'
 import type { LocalSpeechModel } from '@/models/SpeechModel'
@@ -372,6 +500,18 @@ import BackupManager from '@/components/settings/BackupManager.vue'
 const settingsStore = useSettingsStore()
 const memoryStore = useMemoryStore()
 const { showToast } = useToast()
+
+const showEnhancementGuide = ref(false)
+const playgroundInput = ref('من اصلا خاهش نکردم و می روم . ۱- خرید کتاب ها و وسایل\nنکته مهم: فردا جلسه دارم')
+const playgroundResult = ref('')
+
+function runPlaygroundTest() {
+  if (!playgroundInput.value.trim()) return
+  playgroundResult.value = textEnhancementService.enhance(playgroundInput.value, {
+    spellCheck: settingsStore.settings.autoSpellCheck,
+    autoFormat: settingsStore.settings.autoFormatting,
+  })
+}
 
 const availableModels = ref<LocalSpeechModel[]>([])
 const reminderTime = ref(settingsStore.settings.dailyReminderTime || '21:00')
