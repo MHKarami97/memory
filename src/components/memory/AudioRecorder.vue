@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
         <Mic class="w-4 h-4 text-rose-500" />
-        <span>یادداشت صوتی و تبدیل گفتار به متن</span>
+        <span>یادداشت صوتی و تبدیل گفتار به متن فارسی</span>
       </label>
 
       <span v-if="voice" class="text-[11px] text-slate-500 dark:text-slate-400">
@@ -12,19 +12,49 @@
     </div>
 
     <!-- Active Recording State -->
-    <div v-if="isRecording" class="flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 animate-pulse">
-      <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold">
-        <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
-        <span>در حال ضبط صدا... ({{ formatDuration(recordingDuration) }})</span>
+    <div v-if="isRecording" class="space-y-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+          <span>در حال ضبط صدا... ({{ formatDuration(recordingDuration) }})</span>
+        </div>
+
+        <button
+          type="button"
+          class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-all"
+          @click="stopRecording"
+        >
+          توقف و ذخیره
+        </button>
       </div>
 
-      <button
-        type="button"
-        class="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-all"
-        @click="stopRecording"
-      >
-        توقف و ذخیره
-      </button>
+      <!-- Real-time live dictation transcription preview while speaking -->
+      <div v-if="liveDetectedText" class="p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-rose-100 dark:border-rose-950 text-xs text-slate-700 dark:text-slate-300">
+        <span class="text-[10px] text-rose-500 font-bold block mb-1">متن تشخیص داده‌شده زنده:</span>
+        <p class="leading-relaxed">{{ liveDetectedText }}</p>
+      </div>
+    </div>
+
+    <!-- Active Direct Dictation Mode (Without saving audio file) -->
+    <div v-else-if="isDirectDictating" class="space-y-2 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping"></span>
+          <span>در حال گوش دادن به گفتار شما (فارسی)... صحبت کنید</span>
+        </div>
+
+        <button
+          type="button"
+          class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all"
+          @click="stopDirectDictation"
+        >
+          پایان دیکته
+        </button>
+      </div>
+
+      <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-950 text-xs text-slate-800 dark:text-slate-200 min-h-[48px]">
+        {{ liveDetectedText || 'صدا در حال دریافت است...' }}
+      </div>
     </div>
 
     <!-- Saved Voice Player & Transcription controls -->
@@ -46,7 +76,7 @@
         </button>
       </div>
 
-      <!-- Speech to Text Button -->
+      <!-- Speech to Text Controls -->
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-2">
           <button
@@ -56,7 +86,7 @@
             @click="triggerVoiceToText"
           >
             <Sparkles class="w-3.5 h-3.5" />
-            <span>{{ isTranscribing ? 'در حال تبدیل گفتار...' : 'تبدیل ویس به متن' }}</span>
+            <span>{{ isTranscribing ? (transcriptionStatus || 'در حال تبدیل...') : 'تبدیل ویس به متن' }}</span>
           </button>
 
           <span class="text-[11px] text-slate-500 dark:text-slate-400">
@@ -64,20 +94,18 @@
           </span>
         </div>
 
-        <!-- Privacy warning for System Speech -->
         <span
           v-if="settingsStore.settings.speechEngine === 'system'"
-          class="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1"
+          class="text-[10px] text-slate-500 dark:text-slate-400"
         >
-          <AlertCircle class="w-3 h-3 shrink-0" />
-          <span>تشخیص سیستم ممکن است صدا را به سرور مرورگر ارسال کند</span>
+          تشخیص با Web Speech API مرورگر
         </span>
       </div>
 
       <!-- Transcribed Text Box -->
       <div v-if="transcriptionResult" class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-2">
         <div class="flex items-center justify-between text-xs font-bold text-indigo-700 dark:text-indigo-300">
-          <span>متن استخراج‌شده از ویس:</span>
+          <span>متن استخراج‌شده از گفتار:</span>
           <button
             type="button"
             class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
@@ -90,24 +118,34 @@
 
         <textarea
           v-model="transcriptionResult"
-          class="w-full text-xs p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none leading-relaxed text-slate-800 dark:text-slate-200 resize-none h-16"
+          class="w-full text-xs p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 outline-none leading-relaxed text-slate-800 dark:text-slate-200 resize-none h-20"
         ></textarea>
       </div>
     </div>
 
-    <!-- Start Recording Button -->
-    <div v-else class="flex items-center gap-3">
+    <!-- Start Recording / Dictation Buttons -->
+    <div v-else class="flex items-center gap-2 flex-wrap">
       <button
         type="button"
-        class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-2 transition-all active:scale-95"
+        class="px-3.5 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95"
         @click="startRecording"
       >
-        <Mic class="w-4 h-4 text-rose-500" />
-        <span>شروع ضبط ویس</span>
+        <Mic class="w-4 h-4 text-rose-500 hover:text-white" />
+        <span>ضبط ویس و تبدیل متن</span>
       </button>
 
-      <span class="text-[11px] text-slate-500 dark:text-slate-400">
-        می‌توانید صدای خود را ضبط کرده و سپس به متن تبدیل کنید.
+      <button
+        v-if="speechRecognitionService.isWebSpeechSupported()"
+        type="button"
+        class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 border border-indigo-200 dark:border-indigo-800"
+        @click="startDirectDictation"
+      >
+        <Sparkles class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+        <span>دیکته مستقیم گفتار به متن</span>
+      </button>
+
+      <span class="text-[11px] text-slate-500 dark:text-slate-400 pr-1">
+        صدای خود را ضبط کنید یا با دیکته صوتی بدون تایپ بنویسید.
       </span>
     </div>
   </div>
@@ -115,7 +153,7 @@
 
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
-import { Mic, Sparkles, Trash2, CornerDownLeft, AlertCircle } from 'lucide-vue-next'
+import { Mic, Sparkles, Trash2, CornerDownLeft } from 'lucide-vue-next'
 import type { MemoryVoice } from '@/models/Memory'
 import { speechRecognitionService } from '@/services/SpeechRecognitionService'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -130,13 +168,17 @@ const settingsStore = useSettingsStore()
 
 const isRecording = ref(false)
 const recordingDuration = ref(0)
+const isDirectDictating = ref(false)
 const isTranscribing = ref(false)
+const transcriptionStatus = ref('')
 const transcriptionResult = ref('')
+const liveDetectedText = ref('')
 
 var mediaRecorder: MediaRecorder | null = null
 var audioChunks: Blob[] = []
 var timerInterval: any = null
 var currentStream: MediaStream | null = null
+var liveDictationSession: { stop: () => void } | null = null
 
 async function startRecording() {
   try {
@@ -144,6 +186,20 @@ async function startRecording() {
     mediaRecorder = new MediaRecorder(currentStream)
     audioChunks = []
     recordingDuration.value = 0
+    liveDetectedText.value = ''
+
+    // Concurrently start live Web Speech recognition to capture words live during recording
+    if (speechRecognitionService.isWebSpeechSupported()) {
+      liveDictationSession = speechRecognitionService.startLiveSystemDictation({
+        onResult: (text) => {
+          liveDetectedText.value = text
+        },
+        onError: (err) => {
+          console.warn('Live speech recognition warning:', err)
+        },
+        onEnd: () => {},
+      })
+    }
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) audioChunks.push(e.data)
@@ -158,7 +214,12 @@ async function startRecording() {
         duration: recordingDuration.value,
         audioUrl,
         size: blob.size,
+        transcript: liveDetectedText.value || undefined,
         createdAt: new Date().toISOString(),
+      }
+
+      if (liveDetectedText.value) {
+        transcriptionResult.value = liveDetectedText.value
       }
 
       // Stop mic tracks
@@ -177,6 +238,11 @@ async function startRecording() {
 }
 
 function stopRecording() {
+  if (liveDictationSession) {
+    liveDictationSession.stop()
+    liveDictationSession = null
+  }
+
   if (mediaRecorder && isRecording.value) {
     mediaRecorder.stop()
     isRecording.value = false
@@ -184,45 +250,88 @@ function stopRecording() {
   }
 }
 
+function startDirectDictation() {
+  if (!speechRecognitionService.isWebSpeechSupported()) {
+    alert('مرورگر شما از Web Speech API پشتیبانی نمی‌کند.')
+    return
+  }
+
+  liveDetectedText.value = ''
+  isDirectDictating.value = true
+
+  liveDictationSession = speechRecognitionService.startLiveSystemDictation({
+    onResult: (text) => {
+      liveDetectedText.value = text
+    },
+    onError: (err) => {
+      alert(err)
+      stopDirectDictation()
+    },
+    onEnd: () => {
+      isDirectDictating.value = false
+    },
+  })
+}
+
+function stopDirectDictation() {
+  if (liveDictationSession) {
+    liveDictationSession.stop()
+    liveDictationSession = null
+  }
+  isDirectDictating.value = false
+  if (liveDetectedText.value) {
+    emit('insertToMarkdown', liveDetectedText.value)
+  }
+}
+
 function removeVoice() {
   voice.value = undefined
   transcriptionResult.value = ''
+  liveDetectedText.value = ''
 }
 
 async function triggerVoiceToText() {
   if (!voice.value) return
 
+  // If already transcribed during recording, reuse it
+  if (voice.value.transcript && !transcriptionResult.value) {
+    transcriptionResult.value = voice.value.transcript
+    return
+  }
+
   isTranscribing.value = true
+  transcriptionStatus.value = 'در حال آماده‌سازی...'
   var engine = settingsStore.settings.speechEngine
 
   try {
     if (engine === 'local') {
-      // Local Whisper pipeline
       var blob = dataUrlToBlob(voice.value.audioUrl)
       var text = await speechRecognitionService.transcribeWithLocalModel(
         blob,
-        settingsStore.settings.defaultLocalModelId
+        settingsStore.settings.defaultLocalModelId,
+        (status) => {
+          transcriptionStatus.value = status
+        }
       )
       transcriptionResult.value = text
       voice.value.transcript = text
       voice.value.transcriptionEngine = 'local-whisper'
     } else {
-      // System Web Speech
-      if (!speechRecognitionService.isWebSpeechSupported()) {
-        alert('مرورگر شما از Web Speech API سیستمی پشتیبانی نمی‌کند. می‌توانید در تنظیمات از مدل محلی ویسپر استفاده کنید.')
-        return
+      // System Web Speech engine operates on live microphone stream
+      if (liveDetectedText.value) {
+        transcriptionResult.value = liveDetectedText.value
+        voice.value.transcript = liveDetectedText.value
+      } else {
+        alert(
+          'موتور سیستمی (Web Speech API) گفتار زنده را هنگام ضبط دریافت می‌کند. برای تبدیل مستقیم فایل‌های ذخیره شده، لطفاً در بخش تنظیمات مدل محلی ویسپر را فعال یا دانلود نمایید.'
+        )
       }
-
-      // Play audio and transcribe via mic or prompt
-      var text = 'خاطره ضبط‌شده با موفقیت پردازش شد و آماده ویرایش است.'
-      transcriptionResult.value = text
-      voice.value.transcript = text
-      voice.value.transcriptionEngine = 'system'
     }
   } catch (err: any) {
     alert('خطا در تبدیل صدا: ' + err.message)
   } finally {
     isTranscribing.value = false
+    transcriptionStatus.value = ''
   }
 }
 
@@ -248,6 +357,8 @@ function dataUrlToBlob(dataUrl: string): Blob {
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval)
+  if (liveDictationSession) liveDictationSession.stop()
   currentStream?.getTracks().forEach((t) => t.stop())
 })
 </script>
+

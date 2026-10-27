@@ -87,6 +87,20 @@
         >
           <Code class="w-4 h-4" />
         </button>
+
+        <div v-if="speechRecognitionService.isWebSpeechSupported()" class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+        <button
+          v-if="speechRecognitionService.isWebSpeechSupported()"
+          type="button"
+          class="p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs"
+          :class="isDictating ? 'bg-rose-600 text-white shadow-sm animate-pulse' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'"
+          :title="isDictating ? 'توقف دیکته صوتی' : 'دیکته صوتی زنده (تبدیل مستقیم گفتار به متن)'"
+          @click="toggleDictation"
+        >
+          <Mic class="w-4 h-4" />
+          <span v-if="isDictating" class="text-[11px] font-bold">در حال شنیدن...</span>
+        </button>
       </div>
 
       <!-- Mode Switcher (Edit / Preview / Split) -->
@@ -152,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import {
   Bold,
   Italic,
@@ -161,16 +175,47 @@ import {
   Link as LinkIcon,
   Minus,
   Code,
+  Mic,
 } from 'lucide-vue-next'
 import { renderMarkdownToHtml } from '@/utils/sanitize'
+import { speechRecognitionService } from '@/services/SpeechRecognitionService'
 
 const modelValue = defineModel<string>({ default: '' })
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const viewMode = ref<'edit' | 'preview' | 'split'>('edit')
 
+const isDictating = ref(false)
+var dictationSession: { stop: () => void } | null = null
+
 const renderedHtml = computed(() => {
   return renderMarkdownToHtml(modelValue.value)
 })
+
+function toggleDictation() {
+  if (isDictating.value) {
+    dictationSession?.stop()
+    dictationSession = null
+    isDictating.value = false
+    return
+  }
+
+  isDictating.value = true
+  dictationSession = speechRecognitionService.startLiveSystemDictation({
+    onResult: (text, isFinal) => {
+      if (isFinal && text) {
+        var base = modelValue.value ? modelValue.value.trim() + '\n' : ''
+        modelValue.value = base + text
+      }
+    },
+    onError: (err) => {
+      alert(err)
+      isDictating.value = false
+    },
+    onEnd: () => {
+      isDictating.value = false
+    },
+  })
+}
 
 function insertMarkdown(prefix: string, suffix: string, defaultText: string) {
   var el = textareaRef.value
@@ -192,4 +237,10 @@ function insertMarkdown(prefix: string, suffix: string, defaultText: string) {
     }
   }, 10)
 }
+
+onUnmounted(() => {
+  if (dictationSession) {
+    dictationSession.stop()
+  }
+})
 </script>

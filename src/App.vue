@@ -64,12 +64,15 @@ import BottomNav from '@/components/layout/BottomNav.vue'
 import LockScreenModal from '@/components/auth/LockScreenModal.vue'
 import OfflineBadge from '@/components/common/OfflineBadge.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
+import { useToast } from '@/composables/useToast'
+import { getTodayIso } from '@/utils/jalali'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const memoryStore = useMemoryStore()
 const pwaStore = usePwaStore()
+const { showToast } = useToast()
 
 onMounted(async () => {
   await settingsStore.loadSettings()
@@ -78,7 +81,19 @@ onMounted(async () => {
 
   // Check daily reminder if enabled
   if (settingsStore.settings.dailyReminderEnabled) {
-    await notificationService.checkAndSendDailyReminder()
+    var sent = await notificationService.checkAndSendDailyReminder()
+    if (!sent && notificationService.getPermission() !== 'granted') {
+      var todayIso = getTodayIso()
+      var memoriesToday = memoryStore.memories.filter((m) => m.date === todayIso)
+      if (memoriesToday.length === 0) {
+        setTimeout(() => {
+          showToast({
+            type: 'info',
+            message: '🔔 یادآور روزانه: هنوز خاطره‌ای برای امروز ثبت نکرده‌اید!',
+          })
+        }, 2000)
+      }
+    }
   }
 })
 

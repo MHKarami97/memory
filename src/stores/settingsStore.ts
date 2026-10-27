@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
 import type { AppSettings, ThemeMode, FontSize, PhotoQuality, SpeechEngine } from '@/models/Settings'
 import { DEFAULT_SETTINGS } from '@/models/Settings'
 import { db } from '@/repositories/DexieDatabase'
@@ -69,9 +69,23 @@ export const useSettingsStore = defineStore('settings', () => {
     })
   }
 
+  var isDark = computed(() => {
+    if (settings.value.themeMode === 'system') {
+      return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+    return settings.value.themeMode === 'dark'
+  })
+
+  function toggleTheme() {
+    var nextMode: ThemeMode = isDark.value ? 'light' : 'dark'
+    updateSetting('themeMode', nextMode)
+  }
+
   return {
     settings,
     isLoaded,
+    isDark,
+    toggleTheme,
     loadSettings,
     updateSetting,
     applyTheme,

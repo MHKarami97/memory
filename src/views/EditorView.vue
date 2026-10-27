@@ -367,50 +367,59 @@ async function saveMemory() {
 
   var nowIso = new Date().toISOString()
 
-  if (isEditing.value && props.id) {
-    var updated: Memory = {
-      id: props.id,
-      title: form.value.title.trim() || undefined,
-      content: form.value.content,
-      date: form.value.date,
-      time: form.value.time,
-      tags: form.value.tags,
-      people: form.value.people,
-      location: form.value.location?.trim() || undefined,
-      photos: form.value.photos,
-      attachments: form.value.attachments,
-      voice: form.value.voice,
-      isImportant: form.value.isImportant,
-      isLocked: form.value.isLocked,
-      createdAt: nowIso,
-      updatedAt: nowIso,
+  try {
+    if (isEditing.value && props.id) {
+      var updated: Memory = JSON.parse(
+        JSON.stringify({
+          id: props.id,
+          title: form.value.title.trim() || undefined,
+          content: form.value.content,
+          date: form.value.date,
+          time: form.value.time,
+          tags: form.value.tags,
+          people: form.value.people,
+          location: form.value.location?.trim() || undefined,
+          photos: form.value.photos,
+          attachments: form.value.attachments,
+          voice: form.value.voice,
+          isImportant: form.value.isImportant,
+          isLocked: form.value.isLocked,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        })
+      )
+      await memoryStore.updateMemory(updated)
+      showToast({ type: 'success', message: 'خاطره با موفقیت ویرایش شد.' })
+    } else {
+      var newMemory: Memory = JSON.parse(
+        JSON.stringify({
+          id: crypto.randomUUID ? crypto.randomUUID() : 'm_' + Date.now(),
+          title: form.value.title.trim() || undefined,
+          content: form.value.content,
+          date: form.value.date,
+          time: form.value.time,
+          tags: form.value.tags,
+          people: form.value.people,
+          location: form.value.location?.trim() || undefined,
+          photos: form.value.photos,
+          attachments: form.value.attachments,
+          voice: form.value.voice,
+          isImportant: form.value.isImportant,
+          isLocked: form.value.isLocked,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        })
+      )
+      await memoryStore.addMemory(newMemory)
+      await memoryStore.clearDraft()
+      showToast({ type: 'success', message: 'خاطره جدید با موفقیت ثبت شد.' })
     }
-    await memoryStore.updateMemory(updated)
-    showToast({ type: 'success', message: 'خاطره با موفقیت ویرایش شد.' })
-  } else {
-    var newMemory: Memory = {
-      id: crypto.randomUUID ? crypto.randomUUID() : 'm_' + Date.now(),
-      title: form.value.title.trim() || undefined,
-      content: form.value.content,
-      date: form.value.date,
-      time: form.value.time,
-      tags: form.value.tags,
-      people: form.value.people,
-      location: form.value.location?.trim() || undefined,
-      photos: form.value.photos,
-      attachments: form.value.attachments,
-      voice: form.value.voice,
-      isImportant: form.value.isImportant,
-      isLocked: form.value.isLocked,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    }
-    await memoryStore.addMemory(newMemory)
-    await memoryStore.clearDraft()
-    showToast({ type: 'success', message: 'خاطره جدید با موفقیت ثبت شد.' })
-  }
 
-  router.push('/')
+    router.push('/')
+  } catch (err: any) {
+    console.error('Error saving memory:', err)
+    showToast({ type: 'error', message: 'خطا در ثبت خاطره: ' + (err.message || 'خطای پایگاه داده') })
+  }
 }
 
 function handleCancel() {

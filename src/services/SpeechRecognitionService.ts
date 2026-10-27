@@ -10,12 +10,27 @@ export interface SpeechRecognitionCallbacks {
   onEnd: () => void
 }
 
+export interface ModelProgressInfo {
+  status: 'init' | 'downloading' | 'ready' | 'error'
+  percent: number
+  loadedBytes?: number
+  totalBytes?: number
+  file?: string
+  message?: string
+}
+
+// Global cached pipelines in memory
+var transcriberInstances: Record<string, any> = {}
+
 export class SpeechRecognitionService {
-  private recognition: any = null
+  private activeRecognition: any = null
   private isSystemSupported = false
 
   constructor() {
-    var SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    var SpeechRec =
+      typeof window !== 'undefined'
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null
     this.isSystemSupported = !!SpeechRec
   }
 
@@ -23,57 +38,82 @@ export class SpeechRecognitionService {
     return this.isSystemSupported
   }
 
-  startSystemSpeech(callbacks: SpeechRecognitionCallbacks): { stop: () => void } {
-    var SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  /**
+   * Start real-time speech dictation using browser native Web Speech API (fa-IR).
+   * Streams Persian words live into onResult callback.
+   */
+  startLiveSystemDictation(callbacks: SpeechRecognitionCallbacks): { stop: () => void } {
+    var SpeechRec =
+      typeof window !== 'undefined'
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null
+
     if (!SpeechRec) {
-      callbacks.onError('مرورگر شما از قابلیت تبدیل صوت به متن سیستمی (Web Speech API) پشتیبانی نمی‌کند.')
+      callbacks.onError('مرورگر شما از Web Speech API پشتیبانی نمی‌کند. در مرورگرهای Chrome یا Edge تست نمایید.')
       return { stop: () => {} }
     }
 
     try {
-      this.recognition = new SpeechRec()
-      this.recognition.lang = 'fa-IR'
-      this.recognition.continuous = true
-      this.recognition.interimResults = true
-
-      this.recognition.onresult = (event: any) => {
-        var transcript = ''
-        var isFinal = false
-        for (var i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript
-          if (event.results[i].isFinal) {
-            isFinal = true
-          }
+      if (this.activeRecognition) {
+        try {
+          this.activeRecognition.stop()
+        } catch {
+          // ignore
         }
-        callbacks.onResult(transcript, isFinal)
       }
 
-      this.recognition.onerror = (event: any) => {
+      var recognition = new SpeechRec()
+      recognition.lang = 'fa-IR'
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.maxAlternatives = 1
+
+      var finalAccumulated = ''
+
+      recognition.onresult = (event: any) => {
+        var interimTranscript = ''
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+          var item = event.results[i]
+          var transcript = item[0]?.transcript || ''
+          if (item.isFinal) {
+            finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim()
+          } else {
+            interimTranscript += transcript
+          }
+        }
+        var fullText = finalAccumulated + (interimTranscript ? ' ' + interimTranscript.trim() : '')
+        callbacks.onResult(fullText.trim(), !interimTranscript)
+      }
+
+      recognition.onerror = (event: any) => {
         var msg = 'خطا در تشخیص گفتار'
         if (event.error === 'not-allowed') {
-          msg = 'دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر اجازه دسترسی بدهید.'
+          msg = 'دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر دسترسی به میکروفون را فعال کنید.'
         } else if (event.error === 'no-speech') {
-          msg = 'صدایی شنیده نشد.'
+          msg = 'صدایی دریافت نشد.'
         } else if (event.error === 'network') {
-          msg = 'خطای اتصال به سرویس تشخیص گفتار مرورگر.'
+          msg = 'عدم امکان ارتباط با سرویس تشخیص گفتار.'
         }
         callbacks.onError(msg)
       }
 
-      this.recognition.onend = () => {
+      recognition.onend = () => {
+        this.activeRecognition = null
         callbacks.onEnd()
       }
 
-      this.recognition.start()
+      this.activeRecognition = recognition
+      recognition.start()
 
       return {
         stop: () => {
-          if (this.recognition) {
+          if (this.activeRecognition) {
             try {
-              this.recognition.stop()
+              this.activeRecognition.stop()
             } catch {
               // Ignore
             }
+            this.activeRecognition = null
           }
         },
       }
@@ -83,48 +123,126 @@ export class SpeechRecognitionService {
     }
   }
 
-  // --- Local Models Management ---
+  // --- Local Models Management & Transformers.js Integration ---
 
   async getAvailableModels(): Promise<LocalSpeechModel[]> {
     var cachedList = await db.models.toArray()
     var cachedMap = new Map(cachedList.map((m) => [m.id, m]))
 
     return AVAILABLE_SPEECH_MODELS.map((model) => {
-      var isCached = cachedMap.has(model.id)
+      var cached = cachedMap.get(model.id)
       return {
         ...model,
-        isDownloaded: isCached,
-        downloadStatus: isCached ? 'ready' : 'idle',
+        isDownloaded: !!cached,
+        downloadStatus: cached ? 'ready' : 'idle',
       }
     })
   }
 
+  /**
+   * Real on-device model download via @huggingface/transformers.
+   * Downloads ONNX weights & tokenizer and caches into browser CacheStorage.
+   */
   async downloadModel(
     modelId: string,
-    onProgress: (percent: number) => void
+    onProgress: (info: ModelProgressInfo) => void
   ): Promise<void> {
     var model = AVAILABLE_SPEECH_MODELS.find((m) => m.id === modelId)
     if (!model) throw new Error('مدل انتخابی یافت نشد.')
 
-    // Simulate high-fidelity on-device model package caching into IndexedDB
-    // For browser offline operation, we store model manifest & weights in IndexedDB table
-    var totalSteps = 20
-    for (var i = 1; i <= totalSteps; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 150))
-      onProgress(Math.round((i / totalSteps) * 100))
-    }
+    var repo = model.huggingFaceRepo || 'onnx-community/whisper-tiny'
 
-    // Save cache record in IndexedDB
-    await db.models.put({
-      id: model.id,
-      name: model.name,
-      sizeBytes: model.approxSizeMb * 1024 * 1024,
-      cachedAt: new Date().toISOString(),
+    onProgress({
+      status: 'init',
+      percent: 5,
+      message: 'در حال اتصال به مخزن مدل و دریافت اطلاعات وزن‌ها...',
     })
+
+    try {
+      // Dynamically import @huggingface/transformers to keep initial bundle tiny
+      var { pipeline, env } = await import('@huggingface/transformers')
+
+      env.allowLocalModels = false
+      env.useBrowserCache = true
+
+      // Track individual file progress
+      var fileProgresses: Record<string, { loaded: number; total: number }> = {}
+
+      var pipe = await pipeline('automatic-speech-recognition', repo, {
+        dtype: 'q8',
+        progress_callback: (item: any) => {
+          if (item && item.status === 'progress' && item.file) {
+            fileProgresses[item.file] = {
+              loaded: item.loaded || 0,
+              total: item.total || 0,
+            }
+
+            var sumLoaded = 0
+            var sumTotal = 0
+            for (var f in fileProgresses) {
+              sumLoaded += fileProgresses[f].loaded
+              sumTotal += fileProgresses[f].total
+            }
+
+            var pct = sumTotal > 0 ? Math.min(99, Math.round((sumLoaded / sumTotal) * 100)) : 10
+
+            onProgress({
+              status: 'downloading',
+              percent: pct,
+              loadedBytes: sumLoaded,
+              totalBytes: sumTotal,
+              file: item.file,
+              message: `در حال دریافت فایل‌های مدل: ${pct}٪`,
+            })
+          }
+        },
+      })
+
+      transcriberInstances[model.id] = pipe
+
+      // Persist metadata in IndexedDB
+      await db.models.put({
+        id: model.id,
+        name: model.name,
+        sizeBytes: model.approxSizeMb * 1024 * 1024,
+        cachedAt: new Date().toISOString(),
+      })
+
+      onProgress({
+        status: 'ready',
+        percent: 100,
+        message: 'مدل با موفقیت روی دستگاه ذخیره شد و آماده استفاده آفلاین است.',
+      })
+    } catch (err: any) {
+      onProgress({
+        status: 'error',
+        percent: 0,
+        message: err.message || 'خطا در دانلود فایل‌های مدل',
+      })
+      throw err
+    }
   }
 
   async deleteModel(modelId: string): Promise<void> {
+    // Remove from in-memory cache
+    delete transcriberInstances[modelId]
+
+    // Remove from Dexie
     await db.models.delete(modelId)
+
+    // Clear HuggingFace transformers browser cache if supported
+    if (typeof caches !== 'undefined') {
+      try {
+        var keys = await caches.keys()
+        for (var k of keys) {
+          if (k.includes('transformers') || k.includes('onnx')) {
+            await caches.delete(k)
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
   }
 
   async isModelReady(modelId: string): Promise<boolean> {
@@ -132,6 +250,10 @@ export class SpeechRecognitionService {
     return !!cached
   }
 
+  /**
+   * Transcribe an audio Blob using the local Whisper ONNX pipeline.
+   * Decodes audio to 16kHz PCM Float32Array in browser AudioContext.
+   */
   async transcribeWithLocalModel(
     audioBlob: Blob,
     modelId: string,
@@ -139,18 +261,66 @@ export class SpeechRecognitionService {
   ): Promise<string> {
     var isReady = await this.isModelReady(modelId)
     if (!isReady) {
-      throw new Error('مدل هنوز دانلود نشده است. لطفاً ابتدا از بخش تنظیمات مدل را دانلود کنید.')
+      throw new Error('مدل هنوز دانلود نشده است. لطفاً ابتدا در تنظیمات مدل را دانلود کنید.')
     }
 
-    onProgress?.('در حال آماده‌سازی پردازشگر محلی در وب‌ورکر...')
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    var model = AVAILABLE_SPEECH_MODELS.find((m) => m.id === modelId)
+    var repo = model?.huggingFaceRepo || 'onnx-community/whisper-tiny'
 
-    onProgress?.('در حال تبدیل امواج صوتی به متن فارسی...')
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    onProgress?.('در حال آماده‌سازی پردازشگر هوش مصنوعی محلی...')
 
-    // Fallback/Simulated transcription if microphone voice was captured
-    return 'امروز یک روز خوب و پر از اتفاقات جالب بود و احساس آرامش می‌کنم.'
+    var pipe = transcriberInstances[modelId]
+    if (!pipe) {
+      var { pipeline, env } = await import('@huggingface/transformers')
+      env.allowLocalModels = false
+      env.useBrowserCache = true
+
+      pipe = await pipeline('automatic-speech-recognition', repo, {
+        dtype: 'q8',
+      })
+      transcriberInstances[modelId] = pipe
+    }
+
+    onProgress?.('در حال استخراج امواج صوتی و تبدیل فرکانس به ۱۶ کیلوهرتز...')
+
+    // Convert audio Blob to 16kHz Float32Array PCM samples
+    var audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
+      sampleRate: 16000,
+    })
+
+    try {
+      var arrayBuffer = await audioBlob.arrayBuffer()
+      var audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
+      var channelData = audioBuffer.getChannelData(0) // Float32Array
+
+      onProgress?.('در حال شناسایی و پردازش گفتار فارسی با مدل محلی...')
+
+      var output = await pipe(channelData, {
+        language: 'persian',
+        task: 'transcribe',
+      })
+
+      var resultText = ''
+      if (typeof output === 'string') {
+        resultText = output
+      } else if (output && typeof output.text === 'string') {
+        resultText = output.text
+      } else if (Array.isArray(output) && output[0]?.text) {
+        resultText = output[0].text
+      }
+
+      await audioCtx.close()
+      return resultText.trim()
+    } catch (err: any) {
+      try {
+        await audioCtx.close()
+      } catch {
+        // ignore
+      }
+      throw new Error('خطا در رمزگشایی یا پردازش صدا: ' + (err.message || 'خطای نامشخص'))
+    }
   }
 }
 
 export const speechRecognitionService = new SpeechRecognitionService()
+

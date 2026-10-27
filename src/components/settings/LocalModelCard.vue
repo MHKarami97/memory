@@ -48,16 +48,19 @@
     </div>
 
     <!-- Download Progress Bar -->
-    <div v-if="isDownloading" class="space-y-1.5">
-      <div class="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
-        <span>در حال دانلود مدل محلی روی دستگاه...</span>
-        <span>{{ toPersianDigits(downloadProgress) }}٪</span>
+    <div v-if="isDownloading" class="space-y-2 p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50">
+      <div class="flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300 font-semibold">
+        <span class="truncate">{{ downloadStatusText || 'در حال دریافت مدل محلی از مخزن...' }}</span>
+        <span class="font-bold shrink-0 mr-2">{{ toPersianDigits(downloadProgress) }}٪</span>
       </div>
-      <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+      <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
         <div
-          class="h-full bg-indigo-600 rounded-full transition-all duration-200"
+          class="h-full bg-indigo-600 rounded-full transition-all duration-300"
           :style="{ width: `${downloadProgress}%` }"
         ></div>
+      </div>
+      <div v-if="downloadDetails" class="text-[10px] text-slate-500 dark:text-slate-400 dir-ltr text-right truncate">
+        {{ downloadDetails }}
       </div>
     </div>
 
@@ -117,13 +120,23 @@ const emit = defineEmits<{
 
 const isDownloading = ref(false)
 const downloadProgress = ref(0)
+const downloadStatusText = ref('')
+const downloadDetails = ref('')
 
 async function startDownload() {
   isDownloading.value = true
   downloadProgress.value = 0
+  downloadStatusText.value = 'در حال برقراری ارتباط...'
+  downloadDetails.value = ''
   try {
-    await speechRecognitionService.downloadModel(props.model.id, (p) => {
-      downloadProgress.value = p
+    await speechRecognitionService.downloadModel(props.model.id, (info) => {
+      downloadProgress.value = info.percent
+      downloadStatusText.value = info.message || ''
+      if (info.file) {
+        var loadedMb = info.loadedBytes ? (info.loadedBytes / (1024 * 1024)).toFixed(1) : '0'
+        var totalMb = info.totalBytes ? (info.totalBytes / (1024 * 1024)).toFixed(1) : '?'
+        downloadDetails.value = `${info.file} (${loadedMb}MB / ${totalMb}MB)`
+      }
     })
     emit('downloaded', props.model.id)
   } catch (err: any) {

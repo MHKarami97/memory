@@ -199,14 +199,24 @@
         </button>
       </div>
 
-      <div v-if="settingsStore.settings.dailyReminderEnabled" class="flex items-center gap-3 pt-2">
-        <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">ساعت ارسال اعلان:</span>
-        <input
-          v-model="reminderTime"
-          type="time"
-          class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
-          @change="onReminderTimeChanged"
-        />
+      <div v-if="settingsStore.settings.dailyReminderEnabled" class="flex items-center justify-between gap-3 pt-2 flex-wrap">
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">ساعت ارسال اعلان:</span>
+          <input
+            v-model="reminderTime"
+            type="time"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none"
+            @change="onReminderTimeChanged"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+          @click="testReminderNotification"
+        >
+          ارسال اعلان آزمایشی
+        </button>
       </div>
     </div>
 
@@ -270,8 +280,8 @@
 
       <!-- Tech Stack Info -->
       <div class="pt-4 border-t border-rose-200/40 dark:border-rose-900/40 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between flex-wrap gap-2">
-        <span>خاطره‌نامه نسخه ۱.۰.۰ • Vue 3 + TypeScript + Vite + Tailwind + Dexie</span>
-        <span class="text-emerald-500 font-semibold">۱۰۰٪ آفلاین و بدون سرور</span>
+        <span>خاطره‌نامه نسخه ۱.۰.۰</span>
+        <span class="text-emerald-500 font-semibold">قابلیت کارکرد آفلاین</span>
       </div>
     </div>
   </div>
@@ -345,18 +355,48 @@ async function deleteModel(modelId: string) {
 
 async function toggleDailyReminder() {
   var current = settingsStore.settings.dailyReminderEnabled
-  if (!current) {
-    var granted = await notificationService.requestPermission()
-    if (!granted) {
-      alert('اجازه نمایش اعلان توسط مرورگر داده نشد. لطفاً در تنظیمات مرورگر اعلان‌ها را فعال کنید.')
-      return
+  var nextState = !current
+
+  if (nextState) {
+    if (notificationService.isSupported()) {
+      var granted = await notificationService.requestPermission()
+      if (!granted) {
+        showToast({
+          type: 'warning',
+          message: 'اعلان‌های سیستم در مرورگر مسدود است؛ یادآور به شکل درون‌برنامه‌ای نمایش خواهد یافت.',
+        })
+      } else {
+        showToast({
+          type: 'success',
+          message: 'یادآور روزانه با اعلان‌های سیستمی فعال شد.',
+        })
+      }
+    } else {
+      showToast({
+        type: 'info',
+        message: 'مرورگر از وب‌نوتیفیکیشن پشتیبانی نمی‌کند؛ یادآور درون‌برنامه‌ای فعال شد.',
+      })
     }
+  } else {
+    showToast({
+      type: 'info',
+      message: 'یادآور روزانه غیرفعال شد.',
+    })
   }
-  await settingsStore.updateSetting('dailyReminderEnabled', !current)
-  showToast({
-    type: 'success',
-    message: !current ? 'یادآور روزانه با موفقیت فعال شد.' : 'یادآور غیرفعال شد.',
-  })
+
+  await settingsStore.updateSetting('dailyReminderEnabled', nextState)
+}
+
+async function testReminderNotification() {
+  var sent = await notificationService.sendTestNotification()
+  if (sent) {
+    showToast({ type: 'success', message: 'اعلان آزمایشی با موفقیت ارسال شد.' })
+  } else {
+    showToast({
+      type: 'warning',
+      message: 'امکان ارسال اعلان سیستمی نبود. لطفاً دسترسی Notification را در مرورگر فعال نمایید.',
+    })
+  }
 }
 
 function onReminderTimeChanged() {

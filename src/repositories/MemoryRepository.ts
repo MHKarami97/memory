@@ -90,13 +90,15 @@ export class MemoryRepository implements IMemoryRepository {
   }
 
   async create(memory: Memory): Promise<string> {
-    await db.memories.add(memory)
+    var rawMemory = JSON.parse(JSON.stringify(memory))
+    await db.memories.add(rawMemory)
     return memory.id
   }
 
   async update(memory: Memory): Promise<void> {
     memory.updatedAt = new Date().toISOString()
-    await db.memories.put(memory)
+    var rawMemory = JSON.parse(JSON.stringify(memory))
+    await db.memories.put(rawMemory)
   }
 
   async delete(id: string): Promise<void> {
@@ -169,7 +171,8 @@ export class MemoryRepository implements IMemoryRepository {
   }
 
   async saveDraft(draft: MemoryDraft): Promise<void> {
-    await db.drafts.put(draft)
+    var rawDraft = JSON.parse(JSON.stringify(draft))
+    await db.drafts.put(rawDraft)
   }
 
   async getDraft(id: string = 'current-draft'): Promise<MemoryDraft | undefined> {
@@ -181,7 +184,8 @@ export class MemoryRepository implements IMemoryRepository {
   }
 
   async bulkInsert(memories: Memory[]): Promise<void> {
-    await db.memories.bulkPut(memories)
+    var rawList = JSON.parse(JSON.stringify(memories))
+    await db.memories.bulkPut(rawList)
   }
 
   async clearAll(): Promise<void> {

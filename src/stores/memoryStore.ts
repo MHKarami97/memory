@@ -165,18 +165,20 @@ export const useMemoryStore = defineStore('memory', () => {
   }
 
   async function addMemory(memory: Memory): Promise<string> {
-    var id = await memoryRepository.create(memory)
-    memories.value.unshift(memory)
+    var plain = JSON.parse(JSON.stringify(memory))
+    var id = await memoryRepository.create(plain)
+    memories.value.unshift(plain)
     selectedMemoryId.value = id
     await refreshMetadata()
     return id
   }
 
   async function updateMemory(memory: Memory) {
-    await memoryRepository.update(memory)
-    var index = memories.value.findIndex((m) => m.id === memory.id)
+    var plain = JSON.parse(JSON.stringify(memory))
+    await memoryRepository.update(plain)
+    var index = memories.value.findIndex((m) => m.id === plain.id)
     if (index !== -1) {
-      memories.value[index] = { ...memory }
+      memories.value[index] = plain
     }
     await refreshMetadata()
   }
