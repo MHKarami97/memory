@@ -104,7 +104,62 @@
       </div>
     </div>
 
-    <!-- 3. Speech-to-Text & Local AI Models -->
+    <!-- 3. Smart Writing & Spell-Check -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Wand2 class="w-4 h-4 text-indigo-500" />
+          <span>نگارش و ویرایش هوشمند متن (Spell-Check & Formatting)</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          تنظیمات تصحیح خودکار غلط املایی فارسی و انگلیسی، استانداردسازی نیم‌فاصله‌ها و فرمت‌بندی هوشمند مارک‌داون
+        </p>
+      </div>
+
+      <div class="space-y-3 pt-1">
+        <!-- Spell Check Toggle -->
+        <div class="flex items-start justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <div class="space-y-0.5">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200">
+              تصحیح خودکار غلط املایی و نیم‌فاصله‌ها (فارسی و انگلیسی)
+            </h4>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              اصلاح خودکار نیم‌فاصله‌های افعال و پسوندها (می‌روم، کتاب‌ها)، ی/ک عربی، علائم نگارشی و اصلاح اشتباهات رایج تایپی در زمان ثبت یا ذخیره خاطره
+            </p>
+          </div>
+          <button
+            type="button"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all"
+            :class="settingsStore.settings.autoSpellCheck ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'"
+            @click="settingsStore.updateSetting('autoSpellCheck', !settingsStore.settings.autoSpellCheck)"
+          >
+            {{ settingsStore.settings.autoSpellCheck ? 'فعال' : 'غیرفعال' }}
+          </button>
+        </div>
+
+        <!-- Smart Formatting Toggle -->
+        <div class="flex items-start justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <div class="space-y-0.5">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200">
+              فرمت‌بندی خودکار هوشمند مارک‌داون (لیست‌ها و عبارات مهم)
+            </h4>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              تبدیل خودکار خطوط لیست (مانند ۱- یا •) به لیست استاندارد مارک‌داون، برجسته‌سازی کلمات تاکیدی (مانند نکته: یا یادآوری:) و فاصله‌بندی استاندارد
+            </p>
+          </div>
+          <button
+            type="button"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all"
+            :class="settingsStore.settings.autoFormatting ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'"
+            @click="settingsStore.updateSetting('autoFormatting', !settingsStore.settings.autoFormatting)"
+          >
+            {{ settingsStore.settings.autoFormatting ? 'فعال' : 'غیرفعال' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Speech-to-Text & Local AI Models -->
     <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-5 transition-colors">
       <div>
         <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -300,6 +355,7 @@ import {
   Bell,
   HardDrive,
   Trash2,
+  Wand2,
 } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useMemoryStore } from '@/stores/memoryStore'

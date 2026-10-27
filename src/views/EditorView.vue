@@ -216,6 +216,8 @@ import {
 } from 'lucide-vue-next'
 import type { Memory, MemoryPhoto, MemoryAttachment, MemoryVoice } from '@/models/Memory'
 import { useMemoryStore } from '@/stores/memoryStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { textEnhancementService } from '@/services/TextEnhancementService'
 import { useToast } from '@/composables/useToast'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { getTodayIso, getCurrentTime, formatJalaliShort } from '@/utils/jalali'
@@ -230,6 +232,7 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const memoryStore = useMemoryStore()
+const settingsStore = useSettingsStore()
 const { showToast } = useToast()
 
 const isEditing = computed(() => !!props.id)
@@ -367,13 +370,22 @@ async function saveMemory() {
 
   var nowIso = new Date().toISOString()
 
+  // Apply auto spell-check and smart formatting if enabled in settings
+  var contentToSave = form.value.content
+  if (settingsStore.settings.autoSpellCheck || settingsStore.settings.autoFormatting) {
+    contentToSave = textEnhancementService.enhance(contentToSave, {
+      spellCheck: settingsStore.settings.autoSpellCheck,
+      autoFormat: settingsStore.settings.autoFormatting,
+    })
+  }
+
   try {
     if (isEditing.value && props.id) {
       var updated: Memory = JSON.parse(
         JSON.stringify({
           id: props.id,
           title: form.value.title.trim() || undefined,
-          content: form.value.content,
+          content: contentToSave,
           date: form.value.date,
           time: form.value.time,
           tags: form.value.tags,
@@ -395,7 +407,7 @@ async function saveMemory() {
         JSON.stringify({
           id: crypto.randomUUID ? crypto.randomUUID() : 'm_' + Date.now(),
           title: form.value.title.trim() || undefined,
-          content: form.value.content,
+          content: contentToSave,
           date: form.value.date,
           time: form.value.time,
           tags: form.value.tags,

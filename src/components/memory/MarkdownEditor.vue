@@ -101,6 +101,18 @@
           <Mic class="w-4 h-4" />
           <span v-if="isDictating" class="text-[11px] font-bold">در حال شنیدن...</span>
         </button>
+
+        <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+        <button
+          type="button"
+          class="p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-semibold"
+          title="تصحیح غلط‌های املایی، تنظیم نیم‌فاصله‌ها و فرمت‌بندی هوشمند"
+          @click="applySmartEnhancement"
+        >
+          <Wand2 class="w-4 h-4" />
+          <span class="hidden sm:inline text-[11px]">ویرایش هوشمند</span>
+        </button>
       </div>
 
       <!-- Mode Switcher (Edit / Preview / Split) -->
@@ -176,13 +188,20 @@ import {
   Minus,
   Code,
   Mic,
+  Wand2,
 } from 'lucide-vue-next'
 import { renderMarkdownToHtml } from '@/utils/sanitize'
 import { speechRecognitionService } from '@/services/SpeechRecognitionService'
+import { textEnhancementService } from '@/services/TextEnhancementService'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useToast } from '@/composables/useToast'
 
 const modelValue = defineModel<string>({ default: '' })
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const viewMode = ref<'edit' | 'preview' | 'split'>('edit')
+
+const settingsStore = useSettingsStore()
+const { showToast } = useToast()
 
 const isDictating = ref(false)
 var dictationSession: { stop: () => void } | null = null
@@ -190,6 +209,26 @@ var dictationSession: { stop: () => void } | null = null
 const renderedHtml = computed(() => {
   return renderMarkdownToHtml(modelValue.value)
 })
+
+function applySmartEnhancement() {
+  if (!modelValue.value.trim()) {
+    showToast({ type: 'warning', message: 'ابتدا متنی را در کادر خاطره بنویسید.' })
+    return
+  }
+
+  var original = modelValue.value
+  var enhanced = textEnhancementService.enhance(original, {
+    spellCheck: settingsStore.settings.autoSpellCheck,
+    autoFormat: settingsStore.settings.autoFormatting,
+  })
+
+  if (enhanced !== original) {
+    modelValue.value = enhanced
+    showToast({ type: 'success', message: 'متن با موفقیت ویرایش و تصحیح شد.' })
+  } else {
+    showToast({ type: 'info', message: 'متن از نظر نگارشی و فرمت‌بندی مرتب و استاندارد است.' })
+  }
+}
 
 function toggleDictation() {
   if (isDictating.value) {

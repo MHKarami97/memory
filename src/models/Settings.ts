@@ -19,6 +19,8 @@ export interface AppSettings {
   biometricEnabled: boolean
   biometricCredentialId?: string
   autoLockDelayMinutes: number // 0 for immediate, 5, 15, etc.
+  autoSpellCheck: boolean
+  autoFormatting: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,4 +36,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   hasPasscode: false,
   biometricEnabled: false,
   autoLockDelayMinutes: 5,
+  autoSpellCheck: true,
+  autoFormatting: true,
 }
