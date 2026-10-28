@@ -111,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function enableBiometric(): Promise<boolean> {
     try {
-      var credentialId = await biometricService.registerBiometric()
+      var { credentialId } = await biometricService.registerBiometric()
       await settingsStore.updateSetting('biometricCredentialId', credentialId)
       await settingsStore.updateSetting('biometricEnabled', true)
       return true
