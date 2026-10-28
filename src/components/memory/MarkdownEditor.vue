@@ -93,13 +93,13 @@
         <button
           v-if="speechRecognitionService.isWebSpeechSupported()"
           type="button"
-          class="p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs"
-          :class="isDictating ? 'bg-rose-600 text-white shadow-sm animate-pulse' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'"
+          class="p-1.5 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+          :class="isDictating ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm animate-pulse' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700'"
           :title="isDictating ? 'توقف دیکته صوتی' : 'دیکته صوتی زنده (تبدیل مستقیم گفتار به متن)'"
           @click="toggleDictation"
         >
           <Mic class="w-4 h-4" />
-          <span v-if="isDictating" class="text-[11px] font-bold">در حال شنیدن...</span>
+          <span v-if="isDictating" class="text-[11px] font-bold">در حال شنیدن... (توقف)</span>
         </button>
 
         <div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1"></div>
@@ -144,6 +144,26 @@
           همزمان
         </button>
       </div>
+    </div>
+
+    <!-- Active Dictation Real-time Interim Indicator -->
+    <div
+      v-if="isDictating"
+      class="px-3.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 border-b border-rose-100 dark:border-rose-900/40 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between gap-2"
+    >
+      <div class="flex items-center gap-2 truncate">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+        <span class="font-bold shrink-0">میکروفون فعال است:</span>
+        <span class="truncate italic">{{ interimDictation || 'صحبت کنید، کلمات شما به صورت خودکار به متن اضافه می‌شوند...' }}</span>
+      </div>
+
+      <button
+        type="button"
+        class="text-[11px] text-rose-600 dark:text-rose-400 hover:underline font-bold shrink-0 mr-2"
+        @click="toggleDictation"
+      >
+        اتمام دیکته
+      </button>
     </div>
 
     <!-- Content Area -->
@@ -204,6 +224,7 @@ const settingsStore = useSettingsStore()
 const { showToast } = useToast()
 
 const isDictating = ref(false)
+const interimDictation = ref('')
 var dictationSession: { stop: () => void } | null = null
 
 const renderedHtml = computed(() => {
@@ -235,23 +256,32 @@ function toggleDictation() {
     dictationSession?.stop()
     dictationSession = null
     isDictating.value = false
+    interimDictation.value = ''
     return
   }
 
   isDictating.value = true
+  interimDictation.value = ''
+
   dictationSession = speechRecognitionService.startLiveSystemDictation({
-    onResult: (text, isFinal) => {
-      if (isFinal && text) {
-        var base = modelValue.value ? modelValue.value.trim() + '\n' : ''
-        modelValue.value = base + text
+    onSegment: (newSegment) => {
+      if (newSegment) {
+        var base = modelValue.value ? modelValue.value.trim() + ' ' : ''
+        modelValue.value = base + newSegment
+        interimDictation.value = ''
       }
+    },
+    onInterim: (interim) => {
+      interimDictation.value = interim
     },
     onError: (err) => {
       alert(err)
       isDictating.value = false
+      interimDictation.value = ''
     },
     onEnd: () => {
       isDictating.value = false
+      interimDictation.value = ''
     },
   })
 }

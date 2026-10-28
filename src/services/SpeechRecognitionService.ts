@@ -5,9 +5,11 @@ import { db } from '@/repositories/DexieDatabase'
 export type SpeechRecognitionState = 'idle' | 'listening' | 'transcribing' | 'error'
 
 export interface SpeechRecognitionCallbacks {
-  onResult: (text: string, isFinal: boolean) => void
-  onError: (error: string) => void
-  onEnd: () => void
+  onResult?: (fullText: string, isFinal: boolean) => void
+  onSegment?: (newFinalSegment: string) => void
+  onInterim?: (interimText: string) => void
+  onError?: (error: string) => void
+  onEnd?: () => void
 }
 
 export interface ModelProgressInfo {
@@ -40,7 +42,8 @@ export class SpeechRecognitionService {
 
   /**
    * Start real-time speech dictation using browser native Web Speech API (fa-IR).
-   * Streams Persian words live into onResult callback.
+   * Robust keep-alive loop: Automatically restarts upon silence pauses or browser timeouts
+   * until explicitly stopped by the user. Emits both clean incremental segments and full text.
    */
   startLiveSystemDictation(callbacks: SpeechRecognitionCallbacks): { stop: () => void } {
     var SpeechRec =
@@ -49,77 +52,117 @@ export class SpeechRecognitionService {
         : null
 
     if (!SpeechRec) {
-      callbacks.onError('مرورگر شما از Web Speech API پشتیبانی نمی‌کند. در مرورگرهای Chrome یا Edge تست نمایید.')
+      callbacks.onError?.('مرورگر شما از Web Speech API پشتیبانی نمی‌کند. در مرورگرهای Chrome یا Edge تست نمایید.')
       return { stop: () => {} }
     }
 
-    try {
-      if (this.activeRecognition) {
-        try {
-          this.activeRecognition.stop()
-        } catch {
-          // ignore
-        }
-      }
+    var isExplicitlyStopped = false
+    var recognition: any = null
+    var finalAccumulated = ''
+    var restartTimer: any = null
 
-      var recognition = new SpeechRec()
-      recognition.lang = 'fa-IR'
-      recognition.continuous = true
-      recognition.interimResults = true
-      recognition.maxAlternatives = 1
+    var startInstance = () => {
+      if (isExplicitlyStopped) return
 
-      var finalAccumulated = ''
-
-      recognition.onresult = (event: any) => {
-        var interimTranscript = ''
-        for (var i = event.resultIndex; i < event.results.length; ++i) {
-          var item = event.results[i]
-          var transcript = item[0]?.transcript || ''
-          if (item.isFinal) {
-            finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim()
-          } else {
-            interimTranscript += transcript
+      try {
+        if (this.activeRecognition) {
+          try {
+            this.activeRecognition.stop()
+          } catch {
+            // ignore
           }
+          this.activeRecognition = null
         }
-        var fullText = finalAccumulated + (interimTranscript ? ' ' + interimTranscript.trim() : '')
-        callbacks.onResult(fullText.trim(), !interimTranscript)
-      }
 
-      recognition.onerror = (event: any) => {
-        var msg = 'خطا در تشخیص گفتار'
-        if (event.error === 'not-allowed') {
-          msg = 'دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر دسترسی به میکروفون را فعال کنید.'
-        } else if (event.error === 'no-speech') {
-          msg = 'صدایی دریافت نشد.'
-        } else if (event.error === 'network') {
-          msg = 'عدم امکان ارتباط با سرویس تشخیص گفتار.'
-        }
-        callbacks.onError(msg)
-      }
+        recognition = new SpeechRec()
+        recognition.lang = 'fa-IR'
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.maxAlternatives = 1
 
-      recognition.onend = () => {
-        this.activeRecognition = null
-        callbacks.onEnd()
-      }
-
-      this.activeRecognition = recognition
-      recognition.start()
-
-      return {
-        stop: () => {
-          if (this.activeRecognition) {
-            try {
-              this.activeRecognition.stop()
-            } catch {
-              // Ignore
+        recognition.onresult = (event: any) => {
+          var interimTranscript = ''
+          for (var i = event.resultIndex; i < event.results.length; ++i) {
+            var item = event.results[i]
+            var transcript = item[0]?.transcript || ''
+            if (item.isFinal) {
+              var cleanSegment = transcript.trim()
+              if (cleanSegment) {
+                finalAccumulated += (finalAccumulated ? ' ' : '') + cleanSegment
+                callbacks.onSegment?.(cleanSegment)
+              }
+            } else {
+              interimTranscript += transcript
             }
-            this.activeRecognition = null
           }
-        },
+
+          var fullText = finalAccumulated + (interimTranscript ? ' ' + interimTranscript.trim() : '')
+          callbacks.onInterim?.(interimTranscript.trim())
+          callbacks.onResult?.(fullText.trim(), !interimTranscript)
+        }
+
+        recognition.onerror = (event: any) => {
+          // 'no-speech' or 'aborted' are natural pauses or timeouts; DO NOT kill the dictation!
+          if (event.error === 'no-speech' || event.error === 'aborted') {
+            return
+          }
+
+          if (event.error === 'not-allowed') {
+            isExplicitlyStopped = true
+            callbacks.onError?.('دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر دسترسی به میکروفون را فعال کنید.')
+            return
+          }
+
+          if (event.error === 'audio-capture') {
+            isExplicitlyStopped = true
+            callbacks.onError?.('میکروفون در دسترس نیست یا توسط برنامه دیگری استفاده می‌شود.')
+            return
+          }
+
+          console.warn('Speech recognition notice:', event.error)
+        }
+
+        recognition.onend = () => {
+          // If user did not explicitly stop dictation, keep alive seamlessly!
+          if (!isExplicitlyStopped) {
+            restartTimer = setTimeout(() => {
+              if (!isExplicitlyStopped) {
+                startInstance()
+              }
+            }, 100)
+          } else {
+            this.activeRecognition = null
+            callbacks.onEnd?.()
+          }
+        }
+
+        recognition.start()
+        this.activeRecognition = recognition
+      } catch (err: any) {
+        if (!isExplicitlyStopped) {
+          restartTimer = setTimeout(() => {
+            if (!isExplicitlyStopped) startInstance()
+          }, 300)
+        }
       }
-    } catch (err: any) {
-      callbacks.onError(err.message || 'خطا در آغاز ضبط صدا')
-      return { stop: () => {} }
+    }
+
+    startInstance()
+
+    return {
+      stop: () => {
+        isExplicitlyStopped = true
+        if (restartTimer) clearTimeout(restartTimer)
+        if (recognition) {
+          try {
+            recognition.stop()
+          } catch {
+            // Ignore
+          }
+        }
+        this.activeRecognition = null
+        callbacks.onEnd?.()
+      },
     }
   }
 
