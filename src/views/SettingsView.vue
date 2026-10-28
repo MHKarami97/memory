@@ -496,6 +496,56 @@
         <span class="text-emerald-500 font-semibold">قابلیت کارکرد آفلاین</span>
       </div>
     </div>
+
+    <!-- 9. About Box (درباره برنامه و سازنده) -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-6 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-indigo-950/20 space-y-4 shadow-sm transition-colors">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+            <Info class="w-6 h-6" />
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <span>درباره خاطره‌نامه</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                آفلاین
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              دفترچه خاطرات محرمانه، مدرن و ۱۰۰٪ سمت کاربر بدون وابستگی به هیچ سرور خارجی
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="https://mhkarami97.ir"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-sm transition-all group"
+        >
+          <Globe class="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+          <span>mhkarami97.ir</span>
+          <ExternalLink class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+        </a>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 leading-relaxed space-y-1">
+        <p>
+          این برنامه با هدف ثبت ایمن لحظات، رشد فردی، بازتاب روزانه و باغبانی خاطرات طراحی و توسعه یافته است. تمام یادداشت‌ها، عکس‌ها و صوت‌های شما تنها روی حافظه محلی همین دستگاه ذخیره و محافظت می‌شوند.
+        </p>
+        <p class="text-[11px] text-slate-400 pt-1">
+          طراحی و توسعه: 
+          <a
+            href="https://mhkarami97.ir"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-indigo-600 dark:text-indigo-400 font-bold hover:underline inline-flex items-center gap-1"
+          >
+            محمدحسین کرمی (mhkarami97.ir)
+          </a>
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -519,6 +569,9 @@ import {
   Sparkles,
   ArrowLeftRight,
   SlidersHorizontal,
+  Info,
+  Globe,
+  ExternalLink,
 } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useMemoryStore } from '@/stores/memoryStore'
