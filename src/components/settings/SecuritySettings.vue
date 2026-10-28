@@ -23,19 +23,21 @@
 
     <!-- Security Options -->
     <div class="space-y-4">
-      <!-- Set or Change Passcode -->
+      <!-- Set Passcode -->
       <div v-if="!authStore.hasPasscode" class="space-y-3">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <input
             v-model="newPasscode"
             type="password"
-            maxlength="8"
-            placeholder="رمز عبور عددی جدید (مثلاً ۱۲۳۴)"
-            class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 w-60"
+            inputmode="numeric"
+            autocomplete="new-password"
+            :maxlength="PASSCODE_MAX_LENGTH"
+            placeholder="رمز عبور عددی جدید (۴ تا ۸ رقم)"
+            class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500 w-60 max-w-full"
           />
           <button
             type="button"
-            :disabled="newPasscode.length < 4"
+            :disabled="!isPasscodeValid"
             class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
             @click="handleSetPasscode"
           >
@@ -68,13 +70,15 @@
           <input
             v-model="newPasscode"
             type="password"
-            maxlength="8"
-            placeholder="رمز عبور جدید (حداقل ۴ رقم)"
+            inputmode="numeric"
+            autocomplete="new-password"
+            :maxlength="PASSCODE_MAX_LENGTH"
+            placeholder="رمز عبور جدید (۴ تا ۸ رقم)"
             class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none"
           />
           <button
             type="button"
-            :disabled="newPasscode.length < 4"
+            :disabled="!isPasscodeValid"
             class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold disabled:opacity-50"
             @click="handleChangePasscode"
           >
@@ -110,10 +114,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ShieldCheck, Fingerprint } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/composables/useToast'
+import { PASSCODE_MAX_LENGTH, sanitizePasscode, isValidPasscode } from '@/utils/passcode'
 
 const authStore = useAuthStore()
 const { showToast } = useToast()
@@ -121,15 +126,22 @@ const { showToast } = useToast()
 const newPasscode = ref('')
 const isChangingPasscode = ref(false)
 
+const isPasscodeValid = computed(() => isValidPasscode(newPasscode.value))
+
+watch(newPasscode, (value) => {
+  var cleaned = sanitizePasscode(value)
+  if (cleaned !== value) newPasscode.value = cleaned
+})
+
 async function handleSetPasscode() {
-  if (newPasscode.value.length < 4) return
+  if (!isPasscodeValid.value) return
   await authStore.setPasscode(newPasscode.value)
   newPasscode.value = ''
   showToast({ type: 'success', message: 'رمز عبور با موفقیت فعال شد.' })
 }
 
 async function handleChangePasscode() {
-  if (newPasscode.value.length < 4) return
+  if (!isPasscodeValid.value) return
   await authStore.setPasscode(newPasscode.value)
   newPasscode.value = ''
   isChangingPasscode.value = false

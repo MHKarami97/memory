@@ -26,17 +26,18 @@ export interface AppSettings {
   speechEngine: SpeechEngine
   defaultLocalModelId: string
   dailyReminderEnabled: boolean
-  dailyReminderTime: string // HH:mm
+  dailyReminderTime: string // 'HH:mm'
   securityEnabled: boolean
   hasPasscode: boolean
   passcodeHash?: string
   passcodeSalt?: string
+  passcodeLength: number // 0 = unknown (passcode created before this field existed)
   biometricEnabled: boolean
   biometricCredentialId?: string
   autoLockDelayMinutes: number // 0 for immediate, 5, 15, etc.
   autoSpellCheck: boolean
   autoFormatting: boolean
-  editorFields: EditorFieldVisibility // کنترل نمایش/پنهان‌سازی فیلدها در ثبت خاطره
+  editorFields: EditorFieldVisibility
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -50,6 +51,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dailyReminderTime: '21:00',
   securityEnabled: false,
   hasPasscode: false,
+  passcodeLength: 0,
   biometricEnabled: false,
   autoLockDelayMinutes: 5,
   autoSpellCheck: true,
