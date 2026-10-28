@@ -33,6 +33,15 @@
         >
           <Lock class="w-4 h-4" />
         </button>
+        
+        <router-link
+          type="button"
+          class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          title="تنظیمات"
+          to="/settings"
+          >
+          <Settings class="w-4 h-4 text-slate-600" />
+        </router-link>
 
         <!-- Theme Toggle -->
         <button
@@ -50,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { BookHeart, Plus, Lock, Sun, Moon } from 'lucide-vue-next'
+import { BookHeart, Plus, Lock, Sun, Moon, Settings } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 

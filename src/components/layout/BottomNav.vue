@@ -49,16 +49,6 @@
         <Search class="w-5 h-5" />
         <span>جست‌وجو</span>
       </router-link>
-
-      <!-- Settings -->
-      <router-link
-        to="/settings"
-        class="flex flex-col items-center gap-1 text-[10px] font-medium transition-colors"
-        :class="route.path.startsWith('/settings') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400'"
-      >
-        <Settings class="w-5 h-5" />
-        <span>تنظیمات</span>
-      </router-link>
     </div>
   </nav>
 </template>
