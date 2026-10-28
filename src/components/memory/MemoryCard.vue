@@ -22,6 +22,17 @@
       </div>
 
       <div class="flex items-center gap-1.5">
+        <!-- Colorful Mood Icon/Badge -->
+        <span
+          v-if="moodInfo"
+          class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border transition-transform hover:scale-105"
+          :class="[moodInfo.bgColor, moodInfo.textColor, moodInfo.borderColor]"
+          :title="`حال‌وهوا: ${moodInfo.label}`"
+        >
+          <span>{{ moodInfo.emoji }}</span>
+          <span class="text-[10px] hidden xs:inline">{{ moodInfo.label }}</span>
+        </span>
+
         <Star
           v-if="memory.isImportant"
           class="w-4 h-4 fill-amber-400 text-amber-400 shrink-0"
@@ -80,11 +91,27 @@
       </div>
     </div>
 
-    <!-- Footer: Tags, People, Location -->
+    <!-- Footer: Tags, People, Location & Highlights -->
     <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800/60 gap-2 flex-wrap">
       <div class="flex items-center gap-1.5 flex-wrap">
+        <!-- Life Chapter Badge -->
         <span
-          v-for="t in memory.tags.slice(0, 3)"
+          v-if="memory.lifeChapter"
+          class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+        >
+          📖 {{ memory.lifeChapter }}
+        </span>
+
+        <!-- Event Type Badge -->
+        <span
+          v-if="memory.eventType"
+          class="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+        >
+          🎯 {{ memory.eventType }}
+        </span>
+
+        <span
+          v-for="t in memory.tags.slice(0, 2)"
           :key="t"
           class="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
         >
@@ -97,6 +124,14 @@
           class="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400"
         >
           👤 {{ p }}
+        </span>
+
+        <!-- Goals count pill -->
+        <span
+          v-if="memory.goals && memory.goals.length > 0"
+          class="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300"
+        >
+          🎯 {{ toPersianDigits(memory.goals.length) }} هدف
         </span>
       </div>
 
@@ -117,6 +152,7 @@
 import { computed } from 'vue'
 import { Calendar, Star, Lock, MapPin, Mic } from 'lucide-vue-next'
 import type { Memory } from '@/models/Memory'
+import { MOOD_DEFINITIONS } from '@/models/Memory'
 import { formatJalaliFull, getRelativeDateLabel } from '@/utils/jalali'
 import { toPersianDigits, extractExcerpt } from '@/utils/format'
 import { useAuthStore } from '@/stores/authStore'
@@ -134,6 +170,11 @@ const authStore = useAuthStore()
 
 const isUnlocked = computed(() => {
   return authStore.isMemoryUnlocked(props.memory.id) || !props.memory.isLocked
+})
+
+const moodInfo = computed(() => {
+  if (!props.memory.mood) return null
+  return MOOD_DEFINITIONS.find((m) => m.id === props.memory.mood) || null
 })
 
 const excerpt = computed(() => {

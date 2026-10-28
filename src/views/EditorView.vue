@@ -109,6 +109,46 @@
         </button>
       </div>
 
+      <!-- Mood Selection (حال‌وهوا) -->
+      <div
+        v-if="isFieldVisible('mood')"
+        class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2.5 transition-colors"
+      >
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Smile class="w-4 h-4 text-amber-500" />
+            <span>حال‌وهوای امروز شما:</span>
+          </label>
+          <span v-if="form.mood" class="text-[11px] text-slate-400 font-medium">
+            انتخاب‌شده: {{ selectedMoodLabel }}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            v-for="m in MOOD_DEFINITIONS"
+            :key="m.id"
+            type="button"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all"
+            :class="[
+              form.mood === m.id
+                ? `${m.bgColor} ${m.textColor} ${m.borderColor} shadow-sm ring-2 ${m.ringColor}`
+                : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:border-slate-300',
+            ]"
+            @click="selectMood(m.id)"
+          >
+            <span class="text-base">{{ m.emoji }}</span>
+            <span>{{ m.label }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Guided Prompts (پرسش راهنما برای روزهایی که نمیدانند چی بنویسند) -->
+      <GuidedPrompts
+        v-if="isFieldVisible('guidedPrompts')"
+        @select-prompt="insertPromptToContent"
+      />
+
       <!-- Markdown Text Editor -->
       <MarkdownEditor
         v-model="form.content"
@@ -127,73 +167,215 @@
         v-model:attachments="form.attachments"
       />
 
-      <!-- Tags, People, and Location -->
+      <!-- Tags, People, and Location with autocomplete -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-        <!-- Tags Input -->
-        <div class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <!-- Tags Input with Suggestions -->
+        <div
+          v-if="isFieldVisible('tags')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
           <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <Tag class="w-3.5 h-3.5 text-indigo-500" />
-            <span>برچسب‌ها (با اینتر یا ویرگول)</span>
+            <span>برچسب‌ها</span>
           </label>
-          <div class="flex items-center gap-1 flex-wrap">
-            <span
-              v-for="(t, idx) in form.tags"
-              :key="t"
-              class="px-2 py-0.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
-            >
-              #{{ t }}
-              <button type="button" class="hover:text-rose-500" @click="removeTag(idx)">×</button>
-            </span>
-            <input
-              v-model="newTagInput"
-              type="text"
-              placeholder="برچسب جدید..."
-              class="text-xs p-1 bg-transparent outline-none flex-1 min-w-[70px] text-slate-800 dark:text-slate-200"
-              @keydown.enter.prevent="addTag"
-              @keydown.,.prevent="addTag"
-            />
-          </div>
+          <TagChipInput
+            v-model="form.tags"
+            :suggestions="memoryStore.availableTags"
+            placeholder="برچسب جدید..."
+            prefix="#"
+            badge-color-class="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400"
+            @update:model-value="scheduleDraftSave"
+          />
         </div>
 
-        <!-- People Input -->
-        <div class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <!-- People Input with Suggestions -->
+        <div
+          v-if="isFieldVisible('people')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
           <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <Users class="w-3.5 h-3.5 text-amber-500" />
-            <span>افراد مرتبط (با اینتر یا ویرگول)</span>
+            <span>افراد مرتبط</span>
           </label>
-          <div class="flex items-center gap-1 flex-wrap">
-            <span
-              v-for="(p, idx) in form.people"
-              :key="p"
-              class="px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 flex items-center gap-1"
-            >
-              👤 {{ p }}
-              <button type="button" class="hover:text-rose-500" @click="removePerson(idx)">×</button>
-            </span>
-            <input
-              v-model="newPersonInput"
-              type="text"
-              placeholder="نام شخص..."
-              class="text-xs p-1 bg-transparent outline-none flex-1 min-w-[70px] text-slate-800 dark:text-slate-200"
-              @keydown.enter.prevent="addPerson"
-              @keydown.,.prevent="addPerson"
-            />
-          </div>
+          <TagChipInput
+            v-model="form.people"
+            :suggestions="memoryStore.availablePeople"
+            placeholder="نام شخص..."
+            prefix="👤 "
+            badge-color-class="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400"
+            @update:model-value="scheduleDraftSave"
+          />
         </div>
 
-        <!-- Location Input -->
-        <div class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <!-- Location Input with Suggestions -->
+        <div
+          v-if="isFieldVisible('location')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
           <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
             <MapPin class="w-3.5 h-3.5 text-rose-500" />
             <span>مکان (اختیاری)</span>
           </label>
-          <input
+          <AutocompleteInput
             v-model="form.location"
-            type="text"
+            :suggestions="memoryStore.availableLocations"
             placeholder="مثلاً: شیراز، باغ ارم"
-            class="w-full text-xs p-1 bg-transparent outline-none text-slate-800 dark:text-slate-200"
-            @input="scheduleDraftSave"
+            @update:model-value="scheduleDraftSave"
           />
+        </div>
+      </div>
+
+      <!-- Life Chapter, Event Type, and Activities with Suggestions -->
+      <div
+        v-if="isFieldVisible('lifeChapter') || isFieldVisible('eventType') || isFieldVisible('activities')"
+        class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1"
+      >
+        <!-- Life Chapter Input (فصل زندگی) -->
+        <div
+          v-if="isFieldVisible('lifeChapter')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+            <BookOpen class="w-3.5 h-3.5 text-purple-500" />
+            <span>فصل زندگی (دانشگاه، شغل، مهاجرت...)</span>
+          </label>
+          <AutocompleteInput
+            v-model="form.lifeChapter"
+            :suggestions="defaultChaptersCombined"
+            placeholder="مثلاً: دوران دانشجویی"
+            @update:model-value="scheduleDraftSave"
+          />
+        </div>
+
+        <!-- Event Type Input (نوع رویداد) -->
+        <div
+          v-if="isFieldVisible('eventType')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+            <Compass class="w-3.5 h-3.5 text-emerald-500" />
+            <span>نوع رویداد (جشن، سفر، جلسه...)</span>
+          </label>
+          <AutocompleteInput
+            v-model="form.eventType"
+            :suggestions="defaultEventTypesCombined"
+            placeholder="مثلاً: سفر دوستانه"
+            @update:model-value="scheduleDraftSave"
+          />
+        </div>
+
+        <!-- Activities Input (فعالیت‌ها) -->
+        <div
+          v-if="isFieldVisible('activities')"
+          class="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+            <Zap class="w-3.5 h-3.5 text-teal-500" />
+            <span>فعالیت‌ها (ورزش، مطالعه، خرید...)</span>
+          </label>
+          <TagChipInput
+            v-model="form.activities"
+            :suggestions="defaultActivitiesCombined"
+            placeholder="افزودن فعالیت..."
+            prefix="⚡ "
+            badge-color-class="bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-400"
+            @update:model-value="scheduleDraftSave"
+          />
+        </div>
+      </div>
+
+      <!-- Reflection & Growth Fields: Gratitude, Daily Lesson, Goals -->
+      <div
+        v-if="isFieldVisible('gratitude') || isFieldVisible('dailyLesson') || isFieldVisible('goals')"
+        class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1"
+      >
+        <!-- Gratitude (سپاسگزاری) -->
+        <div
+          v-if="isFieldVisible('gratitude')"
+          class="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Sparkles class="w-3.5 h-3.5 text-amber-500" />
+            <span>سپاسگزاری امروز:</span>
+          </label>
+          <textarea
+            v-model="form.gratitude"
+            rows="2"
+            placeholder="امروز بابت چه چیزی سپاسگزاری؟"
+            class="w-full text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-indigo-500 resize-none leading-relaxed"
+            @input="scheduleDraftSave"
+          ></textarea>
+        </div>
+
+        <!-- Daily Lesson (نتیجه گرفته شده از روز) -->
+        <div
+          v-if="isFieldVisible('dailyLesson')"
+          class="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Award class="w-3.5 h-3.5 text-indigo-500" />
+            <span>نتیجه / درس گرفته شده از روز:</span>
+          </label>
+          <textarea
+            v-model="form.dailyLesson"
+            rows="2"
+            placeholder="امروز چه درسی گرفتی یا به چه بینشی رسیدی؟"
+            class="w-full text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-indigo-500 resize-none leading-relaxed"
+            @input="scheduleDraftSave"
+          ></textarea>
+        </div>
+
+        <!-- Goals (اهداف گرفته شده) -->
+        <div
+          v-if="isFieldVisible('goals')"
+          class="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+        >
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Target class="w-3.5 h-3.5 text-emerald-500" />
+            <span>اهداف گرفته شده (با اینتر):</span>
+          </label>
+          <TagChipInput
+            v-model="form.goals"
+            :suggestions="memoryStore.availableGoals"
+            placeholder="هدف یا تصمیم جدید..."
+            prefix="🎯 "
+            badge-color-class="bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400"
+            @update:model-value="scheduleDraftSave"
+          />
+        </div>
+      </div>
+
+      <!-- Related Memories Linker (خاطره‌های مرتبط) -->
+      <div
+        v-if="isFieldVisible('relatedMemories') && candidateRelatedMemories.length > 0"
+        class="space-y-2.5 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-colors"
+      >
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <LinkIcon class="w-4 h-4 text-indigo-500" />
+            <span>ارتباط با خاطره‌های دیگر (پیوستگی داستان زندگی):</span>
+          </label>
+          <span class="text-[11px] text-slate-400">
+            {{ toPersianDigits(form.relatedMemoryIds.length) }} خاطره پیوند خورده
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap max-h-36 overflow-y-auto p-1">
+          <button
+            v-for="cand in candidateRelatedMemories"
+            :key="cand.id"
+            type="button"
+            class="text-xs px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all text-right"
+            :class="[
+              form.relatedMemoryIds.includes(cand.id)
+                ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-sm'
+                : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-slate-300',
+            ]"
+            @click="toggleRelatedMemory(cand.id)"
+          >
+            <span>🔗 {{ cand.title || 'خاطره ' + formatJalaliShort(cand.date) }}</span>
+            <span v-if="form.relatedMemoryIds.includes(cand.id)">✓</span>
+          </button>
         </div>
       </div>
     </div>
@@ -213,17 +395,30 @@ import {
   Tag,
   Users,
   MapPin,
+  Smile,
+  BookOpen,
+  Compass,
+  Zap,
+  Sparkles,
+  Award,
+  Target,
+  Link as LinkIcon,
 } from 'lucide-vue-next'
-import type { Memory, MemoryPhoto, MemoryAttachment, MemoryVoice } from '@/models/Memory'
+import type { Memory, MemoryPhoto, MemoryAttachment, MemoryVoice, MemoryMood } from '@/models/Memory'
+import { MOOD_DEFINITIONS } from '@/models/Memory'
 import { useMemoryStore } from '@/stores/memoryStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { textEnhancementService } from '@/services/TextEnhancementService'
 import { useToast } from '@/composables/useToast'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { getTodayIso, getCurrentTime, formatJalaliShort } from '@/utils/jalali'
+import { toPersianDigits } from '@/utils/format'
 import MarkdownEditor from '@/components/memory/MarkdownEditor.vue'
 import MediaUploader from '@/components/memory/MediaUploader.vue'
 import AudioRecorder from '@/components/memory/AudioRecorder.vue'
+import GuidedPrompts from '@/components/memory/GuidedPrompts.vue'
+import TagChipInput from '@/components/common/TagChipInput.vue'
+import AutocompleteInput from '@/components/common/AutocompleteInput.vue'
 
 const props = defineProps<{
   id?: string
@@ -244,12 +439,20 @@ const form = ref<{
   time: string
   tags: string[]
   people: string[]
-  location?: string
+  location: string
   photos: MemoryPhoto[]
   attachments: MemoryAttachment[]
   voice?: MemoryVoice
   isImportant: boolean
   isLocked: boolean
+  mood?: MemoryMood
+  lifeChapter: string
+  activities: string[]
+  eventType: string
+  gratitude: string
+  dailyLesson: string
+  goals: string[]
+  relatedMemoryIds: string[]
 }>({
   title: '',
   content: '',
@@ -263,16 +466,61 @@ const form = ref<{
   voice: undefined,
   isImportant: false,
   isLocked: false,
+  mood: undefined,
+  lifeChapter: '',
+  activities: [],
+  eventType: '',
+  gratitude: '',
+  dailyLesson: '',
+  goals: [],
+  relatedMemoryIds: [],
 })
 
-const newTagInput = ref('')
-const newPersonInput = ref('')
 const draftSavedText = ref('')
 var draftTimeout: any = null
 
+function isFieldVisible(field: keyof typeof settingsStore.settings.editorFields): boolean {
+  if (!settingsStore.settings.editorFields) return true
+  return settingsStore.settings.editorFields[field] !== false
+}
+
+// Default suggestions combined with user history
+const DEFAULT_CHAPTERS = ['دوران مدرسه', 'دانشگاه', 'سربازی', 'ازدواج', 'شغل جدید', 'سفر و ماجراجویی', 'دوران کرونا', 'مهاجرت']
+const defaultChaptersCombined = computed(() => {
+  var set = new Set([...DEFAULT_CHAPTERS, ...memoryStore.availableLifeChapters])
+  return Array.from(set).sort()
+})
+
+const DEFAULT_EVENT_TYPES = ['جشن تولد', 'مهمانی خانوادگی', 'سفر', 'جلسه کاری', 'ورزش و پیاده‌روی', 'خرید', 'کنسرت و سینما', 'کتاب‌خوانی']
+const defaultEventTypesCombined = computed(() => {
+  var set = new Set([...DEFAULT_EVENT_TYPES, ...memoryStore.availableEventTypes])
+  return Array.from(set).sort()
+})
+
+const DEFAULT_ACTIVITIES = ['ورزش صبحگاهی', 'مطالعه کتاب', 'برنامه‌نویسی', 'آشپزی', 'طبیعت‌گردی', 'رانندگی', 'موسیقی', 'کارهای خانه']
+const defaultActivitiesCombined = computed(() => {
+  var set = new Set([...DEFAULT_ACTIVITIES, ...memoryStore.availableActivities])
+  return Array.from(set).sort()
+})
+
+const selectedMoodLabel = computed(() => {
+  if (!form.value.mood) return ''
+  var item = MOOD_DEFINITIONS.find((m) => m.id === form.value.mood)
+  return item ? `${item.emoji} ${item.label}` : ''
+})
+
+const candidateRelatedMemories = computed(() => {
+  return memoryStore.memories
+    .filter((m) => (props.id ? m.id !== props.id : true))
+    .slice(0, 25)
+})
+
 onMounted(async () => {
   if (isEditing.value && props.id) {
-    var existing = await memoryStore.memories.find((m) => m.id === props.id)
+    var existing = memoryStore.memories.find((m) => m.id === props.id)
+    if (!existing) {
+      existing = await memoryStore.memories.find((m) => m.id === props.id)
+    }
     if (existing) {
       form.value = {
         title: existing.title || '',
@@ -287,12 +535,20 @@ onMounted(async () => {
         voice: existing.voice ? { ...existing.voice } : undefined,
         isImportant: !!existing.isImportant,
         isLocked: !!existing.isLocked,
+        mood: existing.mood,
+        lifeChapter: existing.lifeChapter || '',
+        activities: [...(existing.activities || [])],
+        eventType: existing.eventType || '',
+        gratitude: existing.gratitude || '',
+        dailyLesson: existing.dailyLesson || '',
+        goals: [...(existing.goals || [])],
+        relatedMemoryIds: [...(existing.relatedMemoryIds || [])],
       }
     }
   } else {
     // Check if there is an unsaved draft
     var draft = await memoryStore.loadDraft()
-    if (draft && draft.content) {
+    if (draft && (draft.content || draft.title)) {
       form.value.title = draft.title || ''
       form.value.content = draft.content || ''
       form.value.date = draft.date || getTodayIso()
@@ -302,10 +558,45 @@ onMounted(async () => {
       form.value.location = draft.location || ''
       form.value.isImportant = !!draft.isImportant
       form.value.isLocked = !!draft.isLocked
+      form.value.mood = draft.mood as MemoryMood | undefined
+      form.value.lifeChapter = draft.lifeChapter || ''
+      form.value.activities = draft.activities || []
+      form.value.eventType = draft.eventType || ''
+      form.value.gratitude = draft.gratitude || ''
+      form.value.dailyLesson = draft.dailyLesson || ''
+      form.value.goals = draft.goals || []
+      form.value.relatedMemoryIds = draft.relatedMemoryIds || []
       draftSavedText.value = 'پیش‌نویس ذخیره‌شده بازیابی شد'
     }
   }
 })
+
+function selectMood(mood: MemoryMood) {
+  if (form.value.mood === mood) {
+    form.value.mood = undefined
+  } else {
+    form.value.mood = mood
+  }
+  scheduleDraftSave()
+}
+
+function toggleRelatedMemory(id: string) {
+  var list = [...form.value.relatedMemoryIds]
+  var idx = list.indexOf(id)
+  if (idx !== -1) {
+    list.splice(idx, 1)
+  } else {
+    list.push(id)
+  }
+  form.value.relatedMemoryIds = list
+  scheduleDraftSave()
+}
+
+function insertPromptToContent(prompt: string) {
+  var insertText = `\n\n> 💡 **${prompt}**\n\n`
+  form.value.content += insertText
+  scheduleDraftSave()
+}
 
 function scheduleDraftSave() {
   if (isEditing.value) return // Don't overwrite new memory draft when editing
@@ -322,6 +613,14 @@ function scheduleDraftSave() {
       location: form.value.location,
       isImportant: form.value.isImportant,
       isLocked: form.value.isLocked,
+      mood: form.value.mood,
+      lifeChapter: form.value.lifeChapter,
+      activities: form.value.activities,
+      eventType: form.value.eventType,
+      gratitude: form.value.gratitude,
+      dailyLesson: form.value.dailyLesson,
+      goals: form.value.goals,
+      relatedMemoryIds: form.value.relatedMemoryIds,
       updatedAt: new Date().toISOString(),
     })
     draftSavedText.value = 'پیش‌نویس خودکار ذخیره شد'
@@ -331,34 +630,6 @@ function scheduleDraftSave() {
 function appendTranscribedText(text: string) {
   if (!text) return
   form.value.content += (form.value.content ? '\n\n' : '') + text
-  scheduleDraftSave()
-}
-
-function addTag() {
-  var val = newTagInput.value.trim().replace(/^#/, '')
-  if (val && !form.value.tags.includes(val)) {
-    form.value.tags.push(val)
-    newTagInput.value = ''
-    scheduleDraftSave()
-  }
-}
-
-function removeTag(idx: number) {
-  form.value.tags.splice(idx, 1)
-  scheduleDraftSave()
-}
-
-function addPerson() {
-  var val = newPersonInput.value.trim()
-  if (val && !form.value.people.includes(val)) {
-    form.value.people.push(val)
-    newPersonInput.value = ''
-    scheduleDraftSave()
-  }
-}
-
-function removePerson(idx: number) {
-  form.value.people.splice(idx, 1)
   scheduleDraftSave()
 }
 
@@ -396,6 +667,14 @@ async function saveMemory() {
           voice: form.value.voice,
           isImportant: form.value.isImportant,
           isLocked: form.value.isLocked,
+          mood: form.value.mood || undefined,
+          lifeChapter: form.value.lifeChapter?.trim() || undefined,
+          activities: form.value.activities,
+          eventType: form.value.eventType?.trim() || undefined,
+          gratitude: form.value.gratitude?.trim() || undefined,
+          dailyLesson: form.value.dailyLesson?.trim() || undefined,
+          goals: form.value.goals,
+          relatedMemoryIds: form.value.relatedMemoryIds,
           createdAt: nowIso,
           updatedAt: nowIso,
         })
@@ -418,6 +697,14 @@ async function saveMemory() {
           voice: form.value.voice,
           isImportant: form.value.isImportant,
           isLocked: form.value.isLocked,
+          mood: form.value.mood || undefined,
+          lifeChapter: form.value.lifeChapter?.trim() || undefined,
+          activities: form.value.activities,
+          eventType: form.value.eventType?.trim() || undefined,
+          gratitude: form.value.gratitude?.trim() || undefined,
+          dailyLesson: form.value.dailyLesson?.trim() || undefined,
+          goals: form.value.goals,
+          relatedMemoryIds: form.value.relatedMemoryIds,
           createdAt: nowIso,
           updatedAt: nowIso,
         })

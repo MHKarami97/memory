@@ -29,6 +29,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/CalendarView.vue'),
   },
   {
+    path: '/garden',
+    name: 'garden',
+    component: () => import('@/views/GardenView.vue'),
+  },
+  {
     path: '/search',
     name: 'search',
     component: () => import('@/views/SearchView.vue'),

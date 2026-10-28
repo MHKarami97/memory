@@ -16,10 +16,14 @@ export const useMemoryStore = defineStore('memory', () => {
     sortBy: 'newest',
   })
 
-  // All known tags, people, locations
+  // All known tags, people, locations, chapters, activities, eventTypes, goals
   var availableTags = ref<string[]>([])
   var availablePeople = ref<string[]>([])
   var availableLocations = ref<string[]>([])
+  var availableLifeChapters = ref<string[]>([])
+  var availableActivities = ref<string[]>([])
+  var availableEventTypes = ref<string[]>([])
+  var availableGoals = ref<string[]>([])
 
   // Stats
   var stats = ref<MemoryStats>({
@@ -29,8 +33,11 @@ export const useMemoryStore = defineStore('memory', () => {
     voiceCount: 0,
     tagsCount: 0,
     peopleCount: 0,
+    chaptersCount: 0,
+    goalsCount: 0,
     memoriesByMonth: {},
     memoriesByYear: {},
+    moodDistribution: {},
   })
 
   // Draft
@@ -71,6 +78,34 @@ export const useMemoryStore = defineStore('memory', () => {
       }
 
       if (filter.value.location && m.location !== filter.value.location) {
+        return false
+      }
+
+      if (filter.value.lifeChapter && m.lifeChapter !== filter.value.lifeChapter) {
+        return false
+      }
+
+      if (filter.value.eventType && m.eventType !== filter.value.eventType) {
+        return false
+      }
+
+      if (filter.value.activity && (!m.activities || !m.activities.includes(filter.value.activity))) {
+        return false
+      }
+
+      if (filter.value.mood && m.mood !== filter.value.mood) {
+        return false
+      }
+
+      if (filter.value.hasGoals && (!m.goals || m.goals.length === 0)) {
+        return false
+      }
+
+      if (filter.value.hasGratitude && (!m.gratitude || !m.gratitude.trim())) {
+        return false
+      }
+
+      if (filter.value.hasLesson && (!m.dailyLesson || !m.dailyLesson.trim())) {
         return false
       }
 
@@ -152,15 +187,23 @@ export const useMemoryStore = defineStore('memory', () => {
   }
 
   async function refreshMetadata() {
-    var [tags, people, locations, st] = await Promise.all([
+    var [tags, people, locations, chapters, acts, evs, goals, st] = await Promise.all([
       memoryRepository.getAllTags(),
       memoryRepository.getAllPeople(),
       memoryRepository.getAllLocations(),
+      memoryRepository.getAllLifeChapters(),
+      memoryRepository.getAllActivities(),
+      memoryRepository.getAllEventTypes(),
+      memoryRepository.getAllGoals(),
       memoryRepository.getStats(),
     ])
     availableTags.value = tags
     availablePeople.value = people
     availableLocations.value = locations
+    availableLifeChapters.value = chapters
+    availableActivities.value = acts
+    availableEventTypes.value = evs
+    availableGoals.value = goals
     stats.value = st
   }
 
@@ -256,6 +299,10 @@ export const useMemoryStore = defineStore('memory', () => {
     availableTags,
     availablePeople,
     availableLocations,
+    availableLifeChapters,
+    availableActivities,
+    availableEventTypes,
+    availableGoals,
     stats,
     flashbackMemories,
     todayMemories,

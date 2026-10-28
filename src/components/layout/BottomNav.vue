@@ -30,6 +30,16 @@
         <Plus class="w-6 h-6 stroke-[2.5]" />
       </router-link>
 
+      <!-- Garden -->
+      <router-link
+        to="/garden"
+        class="flex flex-col items-center gap-1 text-[10px] font-medium transition-colors"
+        :class="route.path.startsWith('/garden') ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-500 dark:text-slate-400'"
+      >
+        <Trees class="w-5 h-5" />
+        <span>باغ</span>
+      </router-link>
+
       <!-- Search -->
       <router-link
         to="/search"
@@ -55,7 +65,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { BookOpen, Calendar, Plus, Search, Settings } from 'lucide-vue-next'
+import { BookOpen, Calendar, Plus, Search, Settings, Trees } from 'lucide-vue-next'
 
 const route = useRoute()
 </script>

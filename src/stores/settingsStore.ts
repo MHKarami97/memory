@@ -14,7 +14,14 @@ export const useSettingsStore = defineStore('settings', () => {
       if (records.length > 0) {
         var map: any = {}
         records.forEach((r) => (map[r.id] = r.value))
-        settings.value = { ...DEFAULT_SETTINGS, ...map }
+        settings.value = {
+          ...DEFAULT_SETTINGS,
+          ...map,
+          editorFields: {
+            ...DEFAULT_SETTINGS.editorFields,
+            ...(map.editorFields || {}),
+          },
+        }
       }
       applyTheme(settings.value.themeMode)
       applyFontSize(settings.value.fontSize)

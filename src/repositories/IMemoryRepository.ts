@@ -13,6 +13,10 @@ export interface IMemoryRepository {
   getAllTags(): Promise<string[]>
   getAllPeople(): Promise<string[]>
   getAllLocations(): Promise<string[]>
+  getAllLifeChapters(): Promise<string[]>
+  getAllActivities(): Promise<string[]>
+  getAllEventTypes(): Promise<string[]>
+  getAllGoals(): Promise<string[]>
   
   // Drafts
   saveDraft(draft: MemoryDraft): Promise<void>

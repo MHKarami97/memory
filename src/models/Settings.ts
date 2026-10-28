@@ -3,6 +3,21 @@ export type FontSize = 'sm' | 'base' | 'lg'
 export type PhotoQuality = 'high' | 'medium' | 'low'
 export type SpeechEngine = 'system' | 'local'
 
+export interface EditorFieldVisibility {
+  mood: boolean
+  lifeChapter: boolean
+  activities: boolean
+  eventType: boolean
+  location: boolean
+  people: boolean
+  tags: boolean
+  gratitude: boolean
+  dailyLesson: boolean
+  goals: boolean
+  relatedMemories: boolean
+  guidedPrompts: boolean
+}
+
 export interface AppSettings {
   themeMode: ThemeMode
   fontSize: FontSize
@@ -21,6 +36,7 @@ export interface AppSettings {
   autoLockDelayMinutes: number // 0 for immediate, 5, 15, etc.
   autoSpellCheck: boolean
   autoFormatting: boolean
+  editorFields: EditorFieldVisibility // کنترل نمایش/پنهان‌سازی فیلدها در ثبت خاطره
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -38,4 +54,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoLockDelayMinutes: 5,
   autoSpellCheck: true,
   autoFormatting: true,
+  editorFields: {
+    mood: true,
+    lifeChapter: true,
+    activities: true,
+    eventType: true,
+    location: true,
+    people: true,
+    tags: true,
+    gratitude: true,
+    dailyLesson: true,
+    goals: true,
+    relatedMemories: true,
+    guidedPrompts: true,
+  },
 }

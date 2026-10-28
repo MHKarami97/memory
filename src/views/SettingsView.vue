@@ -281,6 +281,41 @@
       </div>
     </div>
 
+    <!-- 4. Editor Fields Customization (شخصی‌سازی فیلدهای ثبت خاطره) -->
+    <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <SlidersHorizontal class="w-4 h-4 text-purple-500" />
+          <span>شخصی‌سازی فیلدهای صفحه ثبت خاطره</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          مشخص کنید چه بخش‌هایی در زمان ثبت خاطره نمایش داده شوند و فیلدهایی که نیاز ندارید را پنهان کنید (مثلاً اگر سپاسگزاری یا فصل زندگی نمی‌خواهید).
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+        <div
+          v-for="item in editorFieldOptions"
+          :key="item.key"
+          class="flex items-center justify-between p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 hover:border-slate-300 transition-all"
+        >
+          <div class="space-y-0.5 pr-1">
+            <span class="font-bold text-slate-800 dark:text-slate-200 block">{{ item.label }}</span>
+            <span class="text-[10px] text-slate-400 block">{{ item.desc }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded-xl text-[11px] font-semibold shrink-0 transition-all"
+            :class="isFieldActive(item.key) ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'"
+            @click="toggleEditorField(item.key)"
+          >
+            {{ isFieldActive(item.key) ? 'نمایش' : 'پنهان' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 4. Speech-to-Text & Local AI Models -->
     <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-5 transition-colors">
       <div>
@@ -483,6 +518,7 @@ import {
   ChevronUp,
   Sparkles,
   ArrowLeftRight,
+  SlidersHorizontal,
 } from 'lucide-vue-next'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useMemoryStore } from '@/stores/memoryStore'
@@ -493,6 +529,7 @@ import { textEnhancementService } from '@/services/TextEnhancementService'
 import { formatFileSize } from '@/utils/format'
 import { useToast } from '@/composables/useToast'
 import type { LocalSpeechModel } from '@/models/SpeechModel'
+import type { EditorFieldVisibility } from '@/models/Settings'
 import LocalModelCard from '@/components/settings/LocalModelCard.vue'
 import SecuritySettings from '@/components/settings/SecuritySettings.vue'
 import BackupManager from '@/components/settings/BackupManager.vue'
@@ -500,6 +537,36 @@ import BackupManager from '@/components/settings/BackupManager.vue'
 const settingsStore = useSettingsStore()
 const memoryStore = useMemoryStore()
 const { showToast } = useToast()
+
+const editorFieldOptions: Array<{ key: keyof EditorFieldVisibility; label: string; desc: string }> = [
+  { key: 'mood', label: 'حال‌وهوای امروز (Mood)', desc: 'انتخاب احساس روز با آیکون رنگی' },
+  { key: 'guidedPrompts', label: 'پرسش‌های راهنمای نوشتن', desc: 'پیشنهاد موضوع برای روزهایی که نمیدانید چه بنویسید' },
+  { key: 'lifeChapter', label: 'فصل زندگی', desc: 'دوران دانشگاه، ازدواج، مهاجرت و...' },
+  { key: 'activities', label: 'فعالیت‌های روزمره', desc: 'ورزش، مطالعه، خرید، آشپزی و...' },
+  { key: 'eventType', label: 'نوع رویداد', desc: 'سفر، جشن، جلسه، دورهمی و...' },
+  { key: 'location', label: 'مکان خاطره', desc: 'شهر، باغ، کافه یا محل رویداد' },
+  { key: 'people', label: 'افراد مرتبط', desc: 'نام اشخاص حاضر در خاطره' },
+  { key: 'tags', label: 'برچسب‌ها (#)', desc: 'دسته‌بندی موضوعی با تگ‌ها' },
+  { key: 'gratitude', label: 'سپاسگزاری امروز', desc: 'ثبت مواردی که بابت آن‌ها شکرگزارید' },
+  { key: 'dailyLesson', label: 'نتیجه / درس گرفته شده', desc: 'آموزه یا بینش کسب‌شده از اتفاقات روز' },
+  { key: 'goals', label: 'اهداف تعیین‌شده', desc: 'تصمیم‌ها و اهدافی که برای آینده گرفته‌اید' },
+  { key: 'relatedMemories', label: 'پیوند با خاطره‌های دیگر', desc: 'ارتباط داستانی بین خاطرات گذشته' },
+]
+
+function isFieldActive(key: keyof EditorFieldVisibility): boolean {
+  if (!settingsStore.settings.editorFields) return true
+  return settingsStore.settings.editorFields[key] !== false
+}
+
+function toggleEditorField(key: keyof EditorFieldVisibility) {
+  var current = { ...(settingsStore.settings.editorFields || {}) }
+  current[key] = !isFieldActive(key)
+  settingsStore.updateSetting('editorFields', current as any)
+  showToast({
+    type: 'info',
+    message: current[key] ? `فیلد «${key}» نمایش داده می‌شود.` : `فیلد «${key}» در ثبت خاطره پنهان شد.`,
+  })
+}
 
 const showEnhancementGuide = ref(false)
 const playgroundInput = ref('من اصلا خاهش نکردم و می روم . ۱- خرید کتاب ها و وسایل\nنکته مهم: فردا جلسه دارم')

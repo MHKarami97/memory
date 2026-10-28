@@ -15,6 +15,14 @@ export interface MemoryDraft {
   isImportant: boolean
   isLocked: boolean
   updatedAt: string
+  mood?: string
+  lifeChapter?: string
+  activities?: string[]
+  eventType?: string
+  gratitude?: string
+  dailyLesson?: string
+  goals?: string[]
+  relatedMemoryIds?: string[]
 }
 
 export interface StoredModelCache {
@@ -35,6 +43,12 @@ export class KhaterehDatabase extends Dexie {
     super('KhaterehNamehDB')
     this.version(1).stores({
       memories: 'id, date, isImportant, isLocked, createdAt, updatedAt, *tags, *people',
+      drafts: 'id, updatedAt',
+      settings: 'id',
+      models: 'id, cachedAt',
+    })
+    this.version(2).stores({
+      memories: 'id, date, isImportant, isLocked, createdAt, updatedAt, mood, lifeChapter, eventType, *tags, *people, *activities, *goals',
       drafts: 'id, updatedAt',
       settings: 'id',
       models: 'id, cachedAt',

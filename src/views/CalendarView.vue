@@ -68,6 +68,42 @@
             />
           </div>
         </div>
+
+        <!-- چنین روزی: خاطرات سال‌های گذشته در همین روز -->
+        <div
+          v-if="pastYearsSameDayMemories.length > 0"
+          class="bg-gradient-to-br from-amber-50/70 to-orange-50/50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200/80 dark:border-amber-900/60 rounded-3xl p-5 space-y-4 shadow-sm transition-colors"
+        >
+          <div class="flex items-center justify-between border-b border-amber-200/60 dark:border-amber-900/40 pb-3">
+            <div class="flex items-center gap-2">
+              <Sparkles class="w-4 h-4 text-amber-500 shrink-0" />
+              <div>
+                <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
+                  چنین روزی در سال‌های پیش
+                </h3>
+                <span class="text-[11px] text-amber-700/80 dark:text-amber-400">
+                  {{ toPersianDigits(pastYearsSameDayMemories.length) }} خاطره از سال‌های گذشته در همین تاریخ
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+            <div
+              v-for="m in pastYearsSameDayMemories"
+              :key="m.id"
+              class="relative"
+            >
+              <div class="text-[10px] font-bold text-amber-800 dark:text-amber-300 mb-1 flex items-center gap-1">
+                <span>⏳ {{ toPersianDigits(getYearsDifference(m.date)) }} سال پیش:</span>
+              </div>
+              <MemoryCard
+                :memory="m"
+                @select="goToMemory(m.id)"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -76,9 +112,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Calendar as CalendarIcon, Plus, BookOpen } from 'lucide-vue-next'
+import { Calendar as CalendarIcon, Plus, BookOpen, Sparkles } from 'lucide-vue-next'
 import { useMemoryStore } from '@/stores/memoryStore'
-import { getTodayIso, formatJalaliFull } from '@/utils/jalali'
+import { getTodayIso, formatJalaliFull, isoToJalali } from '@/utils/jalali'
 import { toPersianDigits } from '@/utils/format'
 import ShamsiCalendar from '@/components/calendar/ShamsiCalendar.vue'
 import MemoryCard from '@/components/memory/MemoryCard.vue'
@@ -92,6 +128,21 @@ const dayMemories = computed(() => {
     (m) => m.date.slice(0, 10) === selectedDate.value.slice(0, 10)
   )
 })
+
+// خاطرات سال‌های پیش در همین روز و ماه شمسی
+const pastYearsSameDayMemories = computed(() => {
+  var selectedJalali = isoToJalali(selectedDate.value)
+  return memoryStore.memories.filter((m) => {
+    var j = isoToJalali(m.date)
+    return j.jm === selectedJalali.jm && j.jd === selectedJalali.jd && j.jy < selectedJalali.jy
+  })
+})
+
+function getYearsDifference(isoDate: string): number {
+  var target = isoToJalali(isoDate)
+  var sel = isoToJalali(selectedDate.value)
+  return sel.jy - target.jy
+}
 
 function onDateSelected(date: string) {
   selectedDate.value = date

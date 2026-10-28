@@ -45,6 +45,41 @@ export class MemoryRepository implements IMemoryRepository {
         return false
       }
 
+      // Life Chapter filter
+      if (filter.lifeChapter && m.lifeChapter !== filter.lifeChapter) {
+        return false
+      }
+
+      // Event Type filter
+      if (filter.eventType && m.eventType !== filter.eventType) {
+        return false
+      }
+
+      // Activity filter
+      if (filter.activity && (!m.activities || !m.activities.includes(filter.activity))) {
+        return false
+      }
+
+      // Mood filter
+      if (filter.mood && m.mood !== filter.mood) {
+        return false
+      }
+
+      // Has Goals filter
+      if (filter.hasGoals && (!m.goals || m.goals.length === 0)) {
+        return false
+      }
+
+      // Has Gratitude filter
+      if (filter.hasGratitude && (!m.gratitude || !m.gratitude.trim())) {
+        return false
+      }
+
+      // Has Lesson filter
+      if (filter.hasLesson && (!m.dailyLesson || !m.dailyLesson.trim())) {
+        return false
+      }
+
       // Important filter
       if (filter.isImportant !== undefined && m.isImportant !== filter.isImportant) {
         return false
@@ -114,15 +149,25 @@ export class MemoryRepository implements IMemoryRepository {
     var importantCount = 0
     var photosCount = 0
     var voiceCount = 0
+    var goalsCount = 0
     var tagsSet = new Set<string>()
     var peopleSet = new Set<string>()
+    var chaptersSet = new Set<string>()
     var memoriesByMonth: Record<string, number> = {}
     var memoriesByYear: Record<string, number> = {}
+    var moodDistribution: Record<string, number> = {}
 
     for (var m of memories) {
       if (m.isImportant) importantCount++
       if (m.photos) photosCount += m.photos.length
       if (m.voice) voiceCount++
+      if (m.goals && m.goals.length > 0) goalsCount += m.goals.length
+      if (m.mood) {
+        moodDistribution[m.mood] = (moodDistribution[m.mood] || 0) + 1
+      }
+      if (m.lifeChapter?.trim()) {
+        chaptersSet.add(m.lifeChapter.trim())
+      }
 
       m.tags?.forEach((t) => tagsSet.add(t))
       m.people?.forEach((p) => peopleSet.add(p))
@@ -142,8 +187,11 @@ export class MemoryRepository implements IMemoryRepository {
       voiceCount,
       tagsCount: tagsSet.size,
       peopleCount: peopleSet.size,
+      chaptersCount: chaptersSet.size,
+      goalsCount,
       memoriesByMonth,
       memoriesByYear,
+      moodDistribution,
     }
   }
 
@@ -168,6 +216,38 @@ export class MemoryRepository implements IMemoryRepository {
       if (m.location?.trim()) locations.add(m.location.trim())
     })
     return Array.from(locations).sort()
+  }
+
+  async getAllLifeChapters(): Promise<string[]> {
+    var memories = await db.memories.toArray()
+    var chapters = new Set<string>()
+    memories.forEach((m) => {
+      if (m.lifeChapter?.trim()) chapters.add(m.lifeChapter.trim())
+    })
+    return Array.from(chapters).sort()
+  }
+
+  async getAllActivities(): Promise<string[]> {
+    var memories = await db.memories.toArray()
+    var acts = new Set<string>()
+    memories.forEach((m) => m.activities?.forEach((a) => acts.add(a.trim())))
+    return Array.from(acts).filter(Boolean).sort()
+  }
+
+  async getAllEventTypes(): Promise<string[]> {
+    var memories = await db.memories.toArray()
+    var evs = new Set<string>()
+    memories.forEach((m) => {
+      if (m.eventType?.trim()) evs.add(m.eventType.trim())
+    })
+    return Array.from(evs).sort()
+  }
+
+  async getAllGoals(): Promise<string[]> {
+    var memories = await db.memories.toArray()
+    var goals = new Set<string>()
+    memories.forEach((m) => m.goals?.forEach((g) => goals.add(g.trim())))
+    return Array.from(goals).filter(Boolean).sort()
   }
 
   async saveDraft(draft: MemoryDraft): Promise<void> {

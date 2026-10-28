@@ -87,19 +87,56 @@
 
     <!-- Memory Content (When Unlocked) -->
     <div v-else class="space-y-6">
-      <!-- Title & Location -->
-      <div class="space-y-2">
+      <!-- Title, Mood, & Meta Badges -->
+      <div class="space-y-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Mood Badge -->
+          <span
+            v-if="moodInfo"
+            class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-sm"
+            :class="[moodInfo.bgColor, moodInfo.textColor, moodInfo.borderColor]"
+          >
+            <span>{{ moodInfo.emoji }}</span>
+            <span>حال‌وهوا: {{ moodInfo.label }}</span>
+          </span>
+
+          <!-- Life Chapter -->
+          <span
+            v-if="memory.lifeChapter"
+            class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+          >
+            📖 فصل زندگی: {{ memory.lifeChapter }}
+          </span>
+
+          <!-- Event Type -->
+          <span
+            v-if="memory.eventType"
+            class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+          >
+            🎯 رویداد: {{ memory.eventType }}
+          </span>
+        </div>
+
         <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100 leading-snug">
           {{ memory.title || 'خاطره بدون عنوان' }}
         </h1>
+
         <div v-if="memory.location" class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <MapPin class="w-3.5 h-3.5 text-indigo-500 shrink-0" />
           <span>{{ memory.location }}</span>
         </div>
       </div>
 
-      <!-- Tags & People Badges -->
-      <div v-if="memory.tags?.length || memory.people?.length" class="flex items-center gap-2 flex-wrap">
+      <!-- Activities, Tags & People Badges -->
+      <div v-if="memory.activities?.length || memory.tags?.length || memory.people?.length" class="flex items-center gap-2 flex-wrap">
+        <span
+          v-for="act in memory.activities"
+          :key="act"
+          class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800"
+        >
+          ⚡ {{ act }}
+        </span>
+
         <span
           v-for="t in memory.tags"
           :key="t"
@@ -135,6 +172,81 @@
         dir="rtl"
         v-html="renderedContent"
       ></div>
+
+      <!-- Daily Reflections: Gratitude, Lesson, Goals -->
+      <div
+        v-if="memory.gratitude || memory.dailyLesson || (memory.goals && memory.goals.length > 0)"
+        class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800"
+      >
+        <!-- Gratitude Card -->
+        <div
+          v-if="memory.gratitude"
+          class="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/60 space-y-1.5"
+        >
+          <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+            <Sparkles class="w-4 h-4 text-amber-500 shrink-0" />
+            <span>سپاسگزاری امروز:</span>
+          </div>
+          <p class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed whitespace-pre-wrap">
+            {{ memory.gratitude }}
+          </p>
+        </div>
+
+        <!-- Daily Lesson Card -->
+        <div
+          v-if="memory.dailyLesson"
+          class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/60 space-y-1.5"
+        >
+          <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-800 dark:text-indigo-300">
+            <Award class="w-4 h-4 text-indigo-500 shrink-0" />
+            <span>نتیجه / درس گرفته شده:</span>
+          </div>
+          <p class="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed whitespace-pre-wrap">
+            {{ memory.dailyLesson }}
+          </p>
+        </div>
+
+        <!-- Goals Card -->
+        <div
+          v-if="memory.goals && memory.goals.length > 0"
+          class="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/60 space-y-1.5"
+        >
+          <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+            <Target class="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>اهداف تعیین‌شده:</span>
+          </div>
+          <ul class="space-y-1 text-xs text-emerald-900 dark:text-emerald-200 pr-3 list-disc">
+            <li v-for="g in memory.goals" :key="g">{{ g }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Related Memories Section -->
+      <div
+        v-if="relatedMemories.length > 0"
+        class="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800"
+      >
+        <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+          <LinkIcon class="w-4 h-4 text-indigo-500" />
+          <span>خاطره‌های مرتبط:</span>
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button
+            v-for="rel in relatedMemories"
+            :key="rel.id"
+            type="button"
+            class="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-right hover:border-indigo-400 transition-all group"
+            @click="selectRelatedMemory(rel.id)"
+          >
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
+              {{ rel.title || 'خاطره بدون عنوان' }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              {{ formatJalaliFull(rel.date) }}
+            </div>
+          </button>
+        </div>
+      </div>
 
       <!-- Photos Gallery (Multi-column responsive grid) -->
       <div v-if="memory.photos && memory.photos.length > 0" class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -231,8 +343,13 @@ import {
   FileText,
   Download,
   FileDown,
+  Sparkles,
+  Award,
+  Target,
+  Link as LinkIcon,
 } from 'lucide-vue-next'
 import type { Memory } from '@/models/Memory'
+import { MOOD_DEFINITIONS } from '@/models/Memory'
 import { formatJalaliFull } from '@/utils/jalali'
 import { toPersianDigits, formatDuration } from '@/utils/format'
 import { renderMarkdownToHtml } from '@/utils/sanitize'
@@ -254,6 +371,21 @@ const { showToast } = useToast()
 
 const isDeleteModalOpen = ref(false)
 const isPdfModalOpen = ref(false)
+
+const moodInfo = computed(() => {
+  if (!props.memory?.mood) return null
+  return MOOD_DEFINITIONS.find((m) => m.id === props.memory?.mood) || null
+})
+
+const relatedMemories = computed(() => {
+  if (!props.memory?.relatedMemoryIds || props.memory.relatedMemoryIds.length === 0) return []
+  var idSet = new Set(props.memory.relatedMemoryIds)
+  return memoryStore.memories.filter((m) => idSet.has(m.id))
+})
+
+function selectRelatedMemory(id: string) {
+  memoryStore.selectMemory(id)
+}
 
 const isUnlocked = computed(() => {
   if (!props.memory) return true

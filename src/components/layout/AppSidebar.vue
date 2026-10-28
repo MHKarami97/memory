@@ -77,6 +77,7 @@ import {
   CheckCircle2,
   Clock,
   Database,
+  Trees,
 } from 'lucide-vue-next'
 import { useMemoryStore } from '@/stores/memoryStore'
 import { toPersianDigits } from '@/utils/format'
@@ -91,6 +92,7 @@ const hasMemoryToday = computed(() => {
 const navItems = computed(() => [
   { to: '/', label: 'خط زمانی خاطرات', icon: BookOpen, badge: memoryStore.memories.length },
   { to: '/calendar', label: 'تقویم شمسی', icon: Calendar },
+  { to: '/garden', label: 'باغ خاطرات', icon: Trees },
   { to: '/search', label: 'جست‌وجو و دسته‌ها', icon: Search },
   { to: '/settings', label: 'تنظیمات و امنیت', icon: Settings },
 ])
