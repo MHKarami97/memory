@@ -31,7 +31,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2,webmanifest,aff,dic}'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         inlineWorkboxRuntime: true,
@@ -45,6 +46,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  worker: {
+    format: 'es',
   },
   server: {
     port: 5173,

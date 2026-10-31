@@ -25,6 +25,7 @@ export interface AppSettings {
   photoMaxWidth: number
   speechEngine: SpeechEngine
   defaultLocalModelId: string
+  defaultTextModelId: string
   dailyReminderEnabled: boolean
   dailyReminderTime: string // 'HH:mm'
   securityEnabled: boolean
@@ -47,6 +48,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   photoMaxWidth: 1600,
   speechEngine: 'system',
   defaultLocalModelId: 'whisper-tiny-fa',
+  defaultTextModelId: 'qwen3-0.6b',
   dailyReminderEnabled: false,
   dailyReminderTime: '21:00',
   securityEnabled: false,

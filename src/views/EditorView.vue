@@ -409,6 +409,7 @@ import { MOOD_DEFINITIONS } from '@/models/Memory'
 import { useMemoryStore } from '@/stores/memoryStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { textEnhancementService } from '@/services/TextEnhancementService'
+import { userDictionaryService } from '@/services/UserDictionaryService'
 import { useToast } from '@/composables/useToast'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { getTodayIso, getCurrentTime, formatJalaliShort } from '@/utils/jalali'
@@ -643,6 +644,7 @@ async function saveMemory() {
 
   // Apply auto spell-check and smart formatting if enabled in settings
   var contentToSave = form.value.content
+  await userDictionaryService.ensureLoaded()
   if (settingsStore.settings.autoSpellCheck || settingsStore.settings.autoFormatting) {
     contentToSave = textEnhancementService.enhance(contentToSave, {
       spellCheck: settingsStore.settings.autoSpellCheck,

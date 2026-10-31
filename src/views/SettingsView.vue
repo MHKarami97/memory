@@ -388,6 +388,9 @@
       </div>
     </div>
 
+    <!-- Smart text editing: personal dictionary, spell dictionary, local AI models -->
+    <SmartTextSettings />
+
     <!-- 4. Daily Reminder (Notification API) -->
     <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
       <div class="flex items-start justify-between gap-3">
@@ -586,6 +589,7 @@ import type { EditorFieldVisibility } from '@/models/Settings'
 import LocalModelCard from '@/components/settings/LocalModelCard.vue'
 import SecuritySettings from '@/components/settings/SecuritySettings.vue'
 import BackupManager from '@/components/settings/BackupManager.vue'
+import SmartTextSettings from '@/components/settings/SmartTextSettings.vue'
 
 const settingsStore = useSettingsStore()
 const memoryStore = useMemoryStore()

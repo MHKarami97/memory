@@ -108,7 +108,7 @@
           type="button"
           class="p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-semibold"
           title="تصحیح غلط‌های املایی، تنظیم نیم‌فاصله‌ها و فرمت‌بندی هوشمند"
-          @click="applySmartEnhancement"
+          @click="openSmartEdit"
         >
           <Wand2 class="w-4 h-4" />
           <span class="hidden sm:inline text-[11px]">ویرایش هوشمند</span>
@@ -179,8 +179,6 @@
           :placeholder="isTextareaFocused || isDictating ? '' : TEXTAREA_PLACEHOLDER"
           @focus="isTextareaFocused = true"
           @blur="isTextareaFocused = false"
-          spellcheck="true"
-          lang="fa"
           class="w-full h-72 md:h-80 p-4 bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm leading-relaxed outline-none resize-none font-sans"
           dir="rtl"
         ></textarea>
@@ -198,11 +196,18 @@
       </div>
       <div class="clear-both"></div>
     </div>
+
+    <SmartEditModal
+      v-if="isSmartEditOpen"
+      :text="modelValue"
+      @apply="applySmartEdit"
+      @close="isSmartEditOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onUnmounted } from 'vue'
+import { ref, computed, nextTick, defineAsyncComponent, onUnmounted } from 'vue'
 import {
   Bold,
   Italic,
@@ -216,20 +221,20 @@ import {
 } from 'lucide-vue-next'
 import { renderMarkdownToHtml } from '@/utils/sanitize'
 import { speechRecognitionService } from '@/services/SpeechRecognitionService'
-import { textEnhancementService } from '@/services/TextEnhancementService'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { useToast } from '@/composables/useToast'
+
+const SmartEditModal = defineAsyncComponent(() => import('@/components/memory/SmartEditModal.vue'))
 
 const modelValue = defineModel<string>({ default: '' })
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const viewMode = ref<'edit' | 'preview' | 'split'>('edit')
 
-const settingsStore = useSettingsStore()
 const { showToast } = useToast()
 
 const TEXTAREA_PLACEHOLDER = 'شروع به نوشتن خاطره کن... چه احساسی داری؟ چه اتفاقاتی افتاد؟'
 
 const isTextareaFocused = ref(false)
+const isSmartEditOpen = ref(false)
 const isDictating = ref(false)
 const interimDictation = ref('')
 var dictationSession: { stop: () => void } | null = null
@@ -238,24 +243,18 @@ const renderedHtml = computed(() => {
   return renderMarkdownToHtml(modelValue.value)
 })
 
-function applySmartEnhancement() {
+function openSmartEdit() {
   if (!modelValue.value.trim()) {
     showToast({ type: 'warning', message: 'ابتدا متنی را در کادر خاطره بنویسید.' })
     return
   }
+  isSmartEditOpen.value = true
+}
 
-  var original = modelValue.value
-  var enhanced = textEnhancementService.enhance(original, {
-    spellCheck: settingsStore.settings.autoSpellCheck,
-    autoFormat: settingsStore.settings.autoFormatting,
-  })
-
-  if (enhanced !== original) {
-    modelValue.value = enhanced
-    showToast({ type: 'success', message: 'متن با موفقیت ویرایش و تصحیح شد.' })
-  } else {
-    showToast({ type: 'info', message: 'متن از نظر نگارشی و فرمت‌بندی مرتب و استاندارد است.' })
-  }
+function applySmartEdit(text: string) {
+  modelValue.value = text
+  isSmartEditOpen.value = false
+  showToast({ type: 'success', message: 'متن با موفقیت ویرایش شد.' })
 }
 
 function toggleDictation() {
