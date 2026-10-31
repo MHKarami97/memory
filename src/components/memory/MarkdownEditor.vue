@@ -7,7 +7,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="برجسته (Bold)"
-          @click="insertMarkdown('**', '**', 'متن برجسته')"
+          @click="insertMarkdown('**', '**')"
         >
           <Bold class="w-4 h-4" />
         </button>
@@ -16,7 +16,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="مورب (Italic)"
-          @click="insertMarkdown('*', '*', 'متن مورب')"
+          @click="insertMarkdown('*', '*')"
         >
           <Italic class="w-4 h-4" />
         </button>
@@ -27,7 +27,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors font-bold text-xs"
           title="تیتر ۱ (Heading 1)"
-          @click="insertMarkdown('# ', '', 'عنوان اصلی')"
+          @click="insertMarkdown('# ')"
         >
           H1
         </button>
@@ -36,7 +36,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors font-bold text-xs"
           title="تیتر ۲ (Heading 2)"
-          @click="insertMarkdown('## ', '', 'عنوان فرعی')"
+          @click="insertMarkdown('## ')"
         >
           H2
         </button>
@@ -47,7 +47,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="لیست نشانه‌دار (List)"
-          @click="insertMarkdown('- ', '', 'مورد لیست')"
+          @click="insertMarkdown('- ')"
         >
           <List class="w-4 h-4" />
         </button>
@@ -56,7 +56,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="نقل قول (Quote)"
-          @click="insertMarkdown('> ', '', 'متن نقل قول')"
+          @click="insertMarkdown('> ')"
         >
           <Quote class="w-4 h-4" />
         </button>
@@ -65,7 +65,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="پیوند (Link)"
-          @click="insertMarkdown('[عنوان پیوند](', ')', 'https://example.com')"
+          @click="insertMarkdown('[', '](https://)')"
         >
           <LinkIcon class="w-4 h-4" />
         </button>
@@ -74,7 +74,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="خط جداکننده (Divider)"
-          @click="insertMarkdown('\n---\n', '', '')"
+          @click="insertMarkdown('\n---\n')"
         >
           <Minus class="w-4 h-4" />
         </button>
@@ -83,7 +83,7 @@
           type="button"
           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors"
           title="کد (Code)"
-          @click="insertMarkdown('`', '`', 'کد')"
+          @click="insertMarkdown('`', '`')"
         >
           <Code class="w-4 h-4" />
         </button>
@@ -154,7 +154,7 @@
       <div class="flex items-center gap-2 truncate">
         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
         <span class="font-bold shrink-0">میکروفون فعال است:</span>
-        <span class="truncate italic">{{ interimDictation || 'صحبت کنید، کلمات شما به صورت خودکار به متن اضافه می‌شوند...' }}</span>
+        <span class="truncate italic">{{ interimDictation }}</span>
       </div>
 
       <button
@@ -176,7 +176,11 @@
         <textarea
           ref="textareaRef"
           v-model="modelValue"
-          placeholder="شروع به نوشتن خاطره کن... چه احساسی داری؟ چه اتفاقاتی افتاد؟"
+          :placeholder="isTextareaFocused || isDictating ? '' : TEXTAREA_PLACEHOLDER"
+          @focus="isTextareaFocused = true"
+          @blur="isTextareaFocused = false"
+          spellcheck="true"
+          lang="fa"
           class="w-full h-72 md:h-80 p-4 bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm leading-relaxed outline-none resize-none font-sans"
           dir="rtl"
         ></textarea>
@@ -198,7 +202,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onUnmounted } from 'vue'
 import {
   Bold,
   Italic,
@@ -223,6 +227,9 @@ const viewMode = ref<'edit' | 'preview' | 'split'>('edit')
 const settingsStore = useSettingsStore()
 const { showToast } = useToast()
 
+const TEXTAREA_PLACEHOLDER = 'شروع به نوشتن خاطره کن... چه احساسی داری؟ چه اتفاقاتی افتاد؟'
+
+const isTextareaFocused = ref(false)
 const isDictating = ref(false)
 const interimDictation = ref('')
 var dictationSession: { stop: () => void } | null = null
@@ -265,11 +272,8 @@ function toggleDictation() {
 
   dictationSession = speechRecognitionService.startLiveSystemDictation({
     onSegment: (newSegment) => {
-      if (newSegment) {
-        var base = modelValue.value ? modelValue.value.trim() + ' ' : ''
-        modelValue.value = base + newSegment
-        interimDictation.value = ''
-      }
+      appendDictatedSegment(newSegment)
+      interimDictation.value = ''
     },
     onInterim: (interim) => {
       interimDictation.value = interim
@@ -286,25 +290,26 @@ function toggleDictation() {
   })
 }
 
-function insertMarkdown(prefix: string, suffix: string, defaultText: string) {
+function appendDictatedSegment(segment: string) {
+  var current = modelValue.value || ''
+  var separator = current === '' || /\s$/.test(current) ? '' : ' '
+  modelValue.value = current + separator + segment
+}
+
+async function insertMarkdown(prefix: string, suffix: string = '') {
   var el = textareaRef.value
   if (!el) return
 
   var start = el.selectionStart
   var end = el.selectionEnd
   var text = modelValue.value || ''
-  var selected = text.substring(start, end) || defaultText
+  var selected = text.substring(start, end)
 
-  var replacement = prefix + selected + suffix
-  modelValue.value = text.substring(0, start) + replacement + text.substring(end)
+  modelValue.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end)
 
-  // Reposition cursor
-  setTimeout(() => {
-    if (el) {
-      el.focus()
-      el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
-    }
-  }, 10)
+  await nextTick()
+  el.focus()
+  el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
 }
 
 onUnmounted(() => {

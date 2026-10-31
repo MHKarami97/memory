@@ -1,6 +1,7 @@
 import type { LocalSpeechModel } from '@/models/SpeechModel'
 import { AVAILABLE_SPEECH_MODELS } from '@/models/SpeechModel'
 import { db } from '@/repositories/DexieDatabase'
+import { DictationSession } from '@/services/DictationSession'
 
 export type SpeechRecognitionState = 'idle' | 'listening' | 'transcribing' | 'error'
 
@@ -25,145 +26,37 @@ export interface ModelProgressInfo {
 var transcriberInstances: Record<string, any> = {}
 
 export class SpeechRecognitionService {
-  private activeRecognition: any = null
-  private isSystemSupported = false
+  private readonly recognitionConstructor: (new () => any) | null
 
   constructor() {
-    var SpeechRec =
-      typeof window !== 'undefined'
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null
-    this.isSystemSupported = !!SpeechRec
+    this.recognitionConstructor = SpeechRecognitionService.resolveConstructor()
   }
 
   isWebSpeechSupported(): boolean {
-    return this.isSystemSupported
+    return this.recognitionConstructor !== null
   }
 
   /**
-   * Start real-time speech dictation using browser native Web Speech API (fa-IR).
-   * Robust keep-alive loop: Automatically restarts upon silence pauses or browser timeouts
-   * until explicitly stopped by the user. Emits both clean incremental segments and full text.
+   * Starts live dictation with the browser Web Speech API (fa-IR).
+   * Each call owns an isolated DictationSession, so concurrent or restarted sessions
+   * can no longer replay each other's results.
    */
   startLiveSystemDictation(callbacks: SpeechRecognitionCallbacks): { stop: () => void } {
-    var SpeechRec =
-      typeof window !== 'undefined'
-        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-        : null
-
-    if (!SpeechRec) {
+    if (!this.recognitionConstructor) {
       callbacks.onError?.('مرورگر شما از Web Speech API پشتیبانی نمی‌کند. در مرورگرهای Chrome یا Edge تست نمایید.')
       return { stop: () => {} }
     }
 
-    var isExplicitlyStopped = false
-    var recognition: any = null
-    var finalAccumulated = ''
-    var restartTimer: any = null
+    var session = new DictationSession(this.recognitionConstructor, callbacks)
+    session.start()
 
-    var startInstance = () => {
-      if (isExplicitlyStopped) return
+    return { stop: () => session.stop() }
+  }
 
-      try {
-        if (this.activeRecognition) {
-          try {
-            this.activeRecognition.stop()
-          } catch {
-            // ignore
-          }
-          this.activeRecognition = null
-        }
-
-        recognition = new SpeechRec()
-        recognition.lang = 'fa-IR'
-        recognition.continuous = true
-        recognition.interimResults = true
-        recognition.maxAlternatives = 1
-
-        recognition.onresult = (event: any) => {
-          var interimTranscript = ''
-          for (var i = event.resultIndex; i < event.results.length; ++i) {
-            var item = event.results[i]
-            var transcript = item[0]?.transcript || ''
-            if (item.isFinal) {
-              var cleanSegment = transcript.trim()
-              if (cleanSegment) {
-                finalAccumulated += (finalAccumulated ? ' ' : '') + cleanSegment
-                callbacks.onSegment?.(cleanSegment)
-              }
-            } else {
-              interimTranscript += transcript
-            }
-          }
-
-          var fullText = finalAccumulated + (interimTranscript ? ' ' + interimTranscript.trim() : '')
-          callbacks.onInterim?.(interimTranscript.trim())
-          callbacks.onResult?.(fullText.trim(), !interimTranscript)
-        }
-
-        recognition.onerror = (event: any) => {
-          // 'no-speech' or 'aborted' are natural pauses or timeouts; DO NOT kill the dictation!
-          if (event.error === 'no-speech' || event.error === 'aborted') {
-            return
-          }
-
-          if (event.error === 'not-allowed') {
-            isExplicitlyStopped = true
-            callbacks.onError?.('دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر دسترسی به میکروفون را فعال کنید.')
-            return
-          }
-
-          if (event.error === 'audio-capture') {
-            isExplicitlyStopped = true
-            callbacks.onError?.('میکروفون در دسترس نیست یا توسط برنامه دیگری استفاده می‌شود.')
-            return
-          }
-
-          console.warn('Speech recognition notice:', event.error)
-        }
-
-        recognition.onend = () => {
-          // If user did not explicitly stop dictation, keep alive seamlessly!
-          if (!isExplicitlyStopped) {
-            restartTimer = setTimeout(() => {
-              if (!isExplicitlyStopped) {
-                startInstance()
-              }
-            }, 100)
-          } else {
-            this.activeRecognition = null
-            callbacks.onEnd?.()
-          }
-        }
-
-        recognition.start()
-        this.activeRecognition = recognition
-      } catch (err: any) {
-        if (!isExplicitlyStopped) {
-          restartTimer = setTimeout(() => {
-            if (!isExplicitlyStopped) startInstance()
-          }, 300)
-        }
-      }
-    }
-
-    startInstance()
-
-    return {
-      stop: () => {
-        isExplicitlyStopped = true
-        if (restartTimer) clearTimeout(restartTimer)
-        if (recognition) {
-          try {
-            recognition.stop()
-          } catch {
-            // Ignore
-          }
-        }
-        this.activeRecognition = null
-        callbacks.onEnd?.()
-      },
-    }
+  private static resolveConstructor(): (new () => any) | null {
+    if (typeof window === 'undefined') return null
+    var scope = window as any
+    return scope.SpeechRecognition || scope.webkitSpeechRecognition || null
   }
 
   // --- Local Models Management & Transformers.js Integration ---
@@ -366,4 +259,3 @@ export class SpeechRecognitionService {
 }
 
 export const speechRecognitionService = new SpeechRecognitionService()
-

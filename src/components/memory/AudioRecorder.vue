@@ -53,7 +53,7 @@
       </div>
 
       <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-950 text-xs text-slate-800 dark:text-slate-200 min-h-[48px]">
-        {{ liveDetectedText || 'صدا در حال دریافت است...' }}
+        {{ liveDetectedText }}
       </div>
     </div>
 
@@ -361,4 +361,3 @@ onUnmounted(() => {
   currentStream?.getTracks().forEach((t) => t.stop())
 })
 </script>
-
