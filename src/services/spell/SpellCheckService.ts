@@ -90,7 +90,7 @@ export class SpellCheckService {
   }
 
   private send(payload: DistributiveOmit<SpellRequest, 'id'>): Promise<Extract<SpellResponse, { ok: true }>> {
-    var worker = this.worker
+    const worker = this.worker
     if (!worker) return Promise.reject(new Error('Spell worker is not available.'))
 
     var id = this.nextRequestId++

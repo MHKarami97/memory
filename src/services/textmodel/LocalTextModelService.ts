@@ -220,7 +220,7 @@ export class LocalTextModelService {
   }
 
   private send<T>(payload: object, onProgress?: (data: DownloadProgress) => void): Promise<T> {
-    var worker = this.worker
+    const worker = this.worker
     if (!worker) return Promise.reject(new Error('پردازشگر مدل در دسترس نیست.'))
 
     var id = this.nextRequestId++
