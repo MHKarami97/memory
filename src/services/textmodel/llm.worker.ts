@@ -17,9 +17,12 @@ async function loadModel(request: LoadRequest): Promise<ModelAttempt> {
   var { pipeline, env } = await import('@huggingface/transformers')
 
   env.allowLocalModels = false
+  env.allowRemoteModels = true
   env.useBrowserCache = true
-  // After the download step the weights are read from the browser cache only; no request can leave the device.
-  env.allowRemoteModels = request.allowRemote
+
+  if (!request.allowRemote) {
+    blockModelHubRequests()
+  }
 
   var lastError: unknown = null
   for (var attempt of request.attempts) {
@@ -37,6 +40,20 @@ async function loadModel(request: LoadRequest): Promise<ModelAttempt> {
     }
   }
   throw lastError ?? new Error('هیچ‌کدام از حالت‌های اجرای مدل روی این دستگاه در دسترس نیست.')
+}
+
+function blockModelHubRequests(): void {
+  const scopeWithFetch = self as any
+  const originalFetch: typeof fetch = scopeWithFetch.fetch.bind(self)
+  const hubHosts = ['huggingface.co', 'hf.co']
+
+  scopeWithFetch.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    if (hubHosts.some((host) => new URL(url, self.location.href).hostname.endsWith(host))) {
+      return Promise.reject(new Error('فایل‌های مدل در حافظه دستگاه پیدا نشد. مدل را از تنظیمات دوباره دانلود کنید.'))
+    }
+    return originalFetch(input, init)
+  }
 }
 
 function createProgressReporter(id: number): (item: any) => void {
