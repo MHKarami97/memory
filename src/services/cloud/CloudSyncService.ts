@@ -140,7 +140,7 @@ export class CloudSyncService {
   async backupNow(trigger: BackupTrigger): Promise<void> {
     if (!this.state.connected || this.decision) return
     if (!this.isOnline()) return
-    var mode = trigger === 'manual' ? 'interactive' : 'silent'
+    const mode: 'interactive' | 'silent' = trigger === 'manual' ? 'interactive' : 'silent'
     if (!(await this.ensureAuthorized(mode))) {
       this.setStatus('needs-reconnect')
       return
