@@ -43,6 +43,10 @@
     <!-- Security Lock Screen Modal (Passcode & Biometrics) -->
     <LockScreenModal />
 
+    <!-- Google Drive sync: failure bar + restore/conflict dialog -->
+    <SyncFailedBar />
+    <CloudConflictModal />
+
     <!-- Global Toast Notifications & Undo Container -->
     <ToastContainer />
   </div>
@@ -64,6 +68,9 @@ import BottomNav from '@/components/layout/BottomNav.vue'
 import LockScreenModal from '@/components/auth/LockScreenModal.vue'
 import OfflineBadge from '@/components/common/OfflineBadge.vue'
 import ToastContainer from '@/components/common/ToastContainer.vue'
+import SyncFailedBar from '@/components/common/SyncFailedBar.vue'
+import CloudConflictModal from '@/components/cloud/CloudConflictModal.vue'
+import { useCloudSyncStore } from '@/stores/cloudSyncStore'
 import { useToast } from '@/composables/useToast'
 import { getTodayIso } from '@/utils/jalali'
 
@@ -72,12 +79,16 @@ const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const memoryStore = useMemoryStore()
 const pwaStore = usePwaStore()
+const cloudSyncStore = useCloudSyncStore()
 const { showToast } = useToast()
 
 onMounted(async () => {
   await settingsStore.loadSettings()
   await authStore.checkInitialLock()
   await memoryStore.loadMemories()
+
+  // Fire-and-forget: never block first paint on the network.
+  void cloudSyncStore.start()
 
   // Check daily reminder if enabled
   if (settingsStore.settings.dailyReminderEnabled) {

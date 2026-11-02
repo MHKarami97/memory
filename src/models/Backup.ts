@@ -22,5 +22,7 @@ export interface EncryptedBackupContainer {
   meta: {
     createdAt: string
     approxMemoryCount: number
+    contentHash?: string
+    source?: 'manual' | 'cloud'
   }
 }

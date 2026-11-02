@@ -441,6 +441,9 @@
     <!-- 6. Encrypted Backup & Restore -->
     <BackupManager />
 
+    <!-- 6b. Automatic Google Drive backup -->
+    <CloudBackupCard />
+
     <!-- 7. Storage Breakdown -->
     <div class="border border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900 space-y-4 transition-colors">
       <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -589,6 +592,7 @@ import type { EditorFieldVisibility } from '@/models/Settings'
 import LocalModelCard from '@/components/settings/LocalModelCard.vue'
 import SecuritySettings from '@/components/settings/SecuritySettings.vue'
 import BackupManager from '@/components/settings/BackupManager.vue'
+import CloudBackupCard from '@/components/settings/CloudBackupCard.vue'
 import SmartTextSettings from '@/components/settings/SmartTextSettings.vue'
 
 const settingsStore = useSettingsStore()

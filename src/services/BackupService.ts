@@ -3,6 +3,7 @@ import type { BackupPayload, EncryptedBackupContainer } from '@/models/Backup'
 import { memoryRepository } from '@/repositories/MemoryRepository'
 import { db } from '@/repositories/DexieDatabase'
 import { encryptAesGcm, decryptAesGcm, hashSha256 } from '@/utils/crypto'
+import { CLOUD_CONFIG } from '@/config/cloudConfig'
 
 export interface BackupPreview {
   isValid: boolean
@@ -167,6 +168,57 @@ export class BackupService {
     }
 
     return { restoredCount: payload.memories.length }
+  }
+
+  async buildPayload(options: { excludeDeviceSettings?: boolean } = {}): Promise<BackupPayload> {
+    var memories = await memoryRepository.getAll()
+    var settingsRecords = await db.settings.toArray()
+    var settingsMap: Record<string, any> = {}
+    settingsRecords.forEach((s) => (settingsMap[s.id] = s.value))
+
+    delete settingsMap.passcodeHash
+    delete settingsMap.passcodeSalt
+    if (options.excludeDeviceSettings) {
+      CLOUD_CONFIG.deviceSettingKeys.forEach((key) => delete settingsMap[key])
+    }
+
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      memoriesCount: memories.length,
+      memories,
+      settings: settingsMap,
+    }
+  }
+
+  async restoreCloudPayload(payload: BackupPayload, mode: 'replace' | 'merge'): Promise<{ restoredCount: number }> {
+    if (!payload.memories || !Array.isArray(payload.memories)) {
+      throw new Error('هیچ خاطره‌ای در این فایل پشتیبان یافت نشد.')
+    }
+
+    var incoming = payload.memories
+    var settings: Record<string, any> = { ...(payload.settings as Record<string, any>) }
+    CLOUD_CONFIG.deviceSettingKeys.forEach((key) => delete settings[key])
+
+    await db.transaction('rw', db.memories, db.settings, async () => {
+      if (mode === 'replace') {
+        await db.memories.clear()
+        await db.memories.bulkPut(incoming)
+      } else {
+        var current = await db.memories.bulkGet(incoming.map((memory) => memory.id))
+        var newer = incoming.filter((memory, index) => {
+          var existing = current[index]
+          return !existing || (memory.updatedAt || '') > (existing.updatedAt || '')
+        })
+        await db.memories.bulkPut(newer)
+      }
+
+      for (var key of Object.keys(settings)) {
+        await db.settings.put({ id: key, value: settings[key] })
+      }
+    })
+
+    return { restoredCount: incoming.length }
   }
 
   downloadBlob(blob: Blob, filename: string) {
